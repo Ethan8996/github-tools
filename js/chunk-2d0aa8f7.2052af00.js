@@ -1,2 +1,0 @@
-(window["webpackJsonp"]=window["webpackJsonp"]||[]).push([["chunk-2d0aa8f7"],{1211:function(n,e,c){"use strict";c.r(e);var o=c("7a23");const t={class:"tool1"};function a(n,e,c,a,s,u){return Object(o["o"])(),Object(o["d"])("div",t,[...e[0]||(e[0]=[Object(o["e"])("h1",null,"工具1",-1),Object(o["e"])("p",null,"这里是工具1的详细内容。",-1)])])}var s={name:"Tool1"},u=c("d959"),d=c.n(u);const l=d()(s,[["render",a]]);e["default"]=l}}]);
-//# sourceMappingURL=chunk-2d0aa8f7.2052af00.js.map
