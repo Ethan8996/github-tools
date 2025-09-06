@@ -2,7 +2,7 @@
   <div class="home">
     <h1>我的日常工作工具集</h1>
     <div class="tools-grid">
-      <router-link to="/tool1" class="tool-card">
+      <router-link to="/SqlTools" class="tool-card">
         <h2>工具1</h2>
         <p>工具1的简短描述</p>
       </router-link>

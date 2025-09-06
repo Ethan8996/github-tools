@@ -8,9 +8,9 @@ const routes = [
     component: Home
   },
   {
-    path: '/tool1',
-    name: 'Tool1',
-    component: () => import('../views/Tool1.vue')
+    path: '/SqlTools',
+    name: 'SqlTools',
+    component: () => import('../views/SqlTools.vue')
   },
   {
     path: '/tool2',
