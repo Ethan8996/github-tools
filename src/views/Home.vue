@@ -7,8 +7,8 @@
         <p>工具1的简短描述</p>
       </router-link>
       <router-link to="/tool2" class="tool-card">
-        <h2>工具2</h2>
-        <p>工具2的简短描述</p>
+        <h2>字符串列表比较</h2>
+        <p>比较两组字符串列表的交集、并集和差集</p>
       </router-link>
       <!-- 可以继续添加更多工具卡片 -->
     </div>
