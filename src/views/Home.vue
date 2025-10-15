@@ -10,6 +10,10 @@
         <h2>字符串列表比较</h2>
         <p>比较两组字符串列表的交集、并集和差集</p>
       </router-link>
+      <router-link to="/tool3" class="tool-card">
+        <h2>字符串编号工具</h2>
+        <p>为字符串列表添加多种格式的编号</p>
+      </router-link>
       <!-- 可以继续添加更多工具卡片 -->
     </div>
   </div>
