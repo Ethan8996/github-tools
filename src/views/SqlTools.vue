@@ -1,6 +1,9 @@
 <template>
   <div class="sql-tools">
-    <h1>SQL 工具集</h1>
+    <div class="header">
+      <button @click="goToHome" class="home-btn">← 返回首页</button>
+      <h1>SQL 工具集</h1>
+    </div>
 
     <div class="tool-container">
       <div class="tab-container">
@@ -164,6 +167,9 @@ export default {
   },
   methods: {
     // SQL IN 参数转换功能
+    goToHome() {
+      this.$router.push('/');
+    },
     convertToSqlIn() {
       const inputText = this.inParams.inputText;
       
@@ -285,6 +291,29 @@ export default {
   color: #333;
 }
 
+.header {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.home-btn {
+  position: absolute;
+  left: 20px;
+  top: 0;
+  background-color: #95a5a6;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.home-btn:hover {
+  background-color: #7f8c8d;
+}
+
 .tool-container {
   background-color: white;
   border-radius: 8px;
@@ -296,7 +325,7 @@ export default {
 h1 {
   color: #2c3e50;
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 0;
 }
 
 h2 {

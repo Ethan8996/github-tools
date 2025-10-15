@@ -1,6 +1,9 @@
 <template>
   <div class="string-comparison">
-    <h1>字符串列表比较工具</h1>
+    <div class="header">
+      <button @click="goToHome" class="home-btn">← 返回首页</button>
+      <h1>字符串列表比较工具</h1>
+    </div>
     
     <div class="input-container">
       <div class="input-group">
@@ -38,7 +41,7 @@
     <div v-if="hasResults" class="results">
       <div class="result-group">
         <h3>交集 (A ∩ B)</h3>
-        <p class="description">两个列表中都存在的元素</p>
+        <p class="description">两个列表中都存在的元素 (共 {{ intersection.length }} 个)</p>
         <div class="result-box">
           <div v-for="item in intersection" :key="item" class="result-item">{{ item }}</div>
           <div v-if="intersection.length === 0" class="empty-result">无交集</div>
@@ -47,7 +50,7 @@
 
       <div class="result-group">
         <h3>并集 (A ∪ B)</h3>
-        <p class="description">两个列表中所有不重复的元素</p>
+        <p class="description">两个列表中所有不重复的元素 (共 {{ union.length }} 个)</p>
         <div class="result-box">
           <div v-for="item in union" :key="item" class="result-item">{{ item }}</div>
           <div v-if="union.length === 0" class="empty-result">无并集</div>
@@ -56,7 +59,7 @@
 
       <div class="result-group">
         <h3>差集 (A - B)</h3>
-        <p class="description">仅在列表 A 中存在的元素</p>
+        <p class="description">仅在列表 A 中存在的元素 (共 {{ differenceA.length }} 个)</p>
         <div class="result-box">
           <div v-for="item in differenceA" :key="item" class="result-item">{{ item }}</div>
           <div v-if="differenceA.length === 0" class="empty-result">无差集</div>
@@ -65,7 +68,7 @@
 
       <div class="result-group">
         <h3>差集 (B - A)</h3>
-        <p class="description">仅在列表 B 中存在的元素</p>
+        <p class="description">仅在列表 B 中存在的元素 (共 {{ differenceB.length }} 个)</p>
         <div class="result-box">
           <div v-for="item in differenceB" :key="item" class="result-item">{{ item }}</div>
           <div v-if="differenceB.length === 0" class="empty-result">无差集</div>
@@ -94,6 +97,9 @@ export default {
       return text.split('\n')
         .map(line => line.trim())
         .filter(line => line.length > 0);
+    },
+    goToHome() {
+      this.$router.push('/');
     },
     compare() {
       const setA = new Set(this.parseList(this.listA));
@@ -133,10 +139,33 @@ export default {
   margin: 0 auto;
 }
 
+.header {
+  position: relative;
+  margin-bottom: 30px;
+}
+
+.home-btn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #95a5a6;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.home-btn:hover {
+  background-color: #7f8c8d;
+}
+
 h1 {
   text-align: center;
   color: #2c3e50;
-  margin-bottom: 30px;
+  margin-bottom: 0;
 }
 
 .input-container {
