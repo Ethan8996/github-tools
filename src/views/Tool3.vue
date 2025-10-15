@@ -24,6 +24,7 @@
         <div class="option-group">
           <label>编号格式：</label>
           <select v-model="numberFormat" class="format-select">
+            <option value="raw">1 2 3</option>
             <option value="dot">1. 2. 3.</option>
             <option value="paren">1) 2) 3)</option>
             <option value="bracket">[1] [2] [3]</option>
@@ -79,7 +80,7 @@ export default {
   data() {
     return {
       inputText: '',
-      numberFormat: 'dot',
+      numberFormat: 'raw',
       startNumber: 1,
       completeResults: [],
       numbersOnly: [],
@@ -94,6 +95,8 @@ export default {
     },
     formatNumber(num) {
       switch (this.numberFormat) {
+        case 'raw':
+          return `${num}`;
         case 'dot':
           return `${num}.`;
         case 'paren':
@@ -131,7 +134,7 @@ export default {
     },
     clearAll() {
       this.inputText = '';
-      this.numberFormat = 'dot';
+      this.numberFormat = 'raw';
       this.startNumber = 1;
       this.completeResults = [];
       this.numbersOnly = [];
