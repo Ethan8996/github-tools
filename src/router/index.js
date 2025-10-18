@@ -21,6 +21,11 @@ const routes = [
     path: '/tool3',
     name: 'Tool3',
     component: () => import('../views/Tool3.vue')
+  },
+  {
+    path: '/json-compare',
+    name: 'JsonCompare',
+    component: () => import('../views/JsonCompare.vue')
   }
 ]
 

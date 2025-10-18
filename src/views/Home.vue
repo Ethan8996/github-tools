@@ -14,6 +14,10 @@
         <h2>字符串编号工具</h2>
         <p>为字符串列表添加多种格式的编号</p>
       </router-link>
+      <router-link to="/json-compare" class="tool-card">
+        <h2>JSON 比较工具</h2>
+        <p>比较两个 JSON 数据之间的差异</p>
+      </router-link>
       <!-- 可以继续添加更多工具卡片 -->
     </div>
   </div>
