@@ -4,35 +4,35 @@
       <button @click="goToHome" class="home-btn">← 返回首页</button>
       <h1>JSON 对比工具</h1>
     </div>
-    
+
     <div class="input-container">
       <div class="input-group">
         <h3>JSON A</h3>
-        <textarea 
-          v-model="jsonA"
-          placeholder="请输入第一个 JSON 对象
+        <textarea
+            v-model="jsonA"
+            placeholder="请输入第一个 JSON 对象
 例如：
 {
   &quot;name&quot;: &quot;测试&quot;,
   &quot;age&quot;: 25,
   &quot;skills&quot;: [&quot;Vue&quot;, &quot;JavaScript&quot;]
 }"
-          class="input-area"
+            class="input-area"
         ></textarea>
       </div>
 
       <div class="input-group">
         <h3>JSON B</h3>
-        <textarea 
-          v-model="jsonB"
-          placeholder="请输入第二个 JSON 对象
+        <textarea
+            v-model="jsonB"
+            placeholder="请输入第二个 JSON 对象
 例如：
 {
   &quot;name&quot;: &quot;测试&quot;,
   &quot;age&quot;: 30,
   &quot;skills&quot;: [&quot;Vue&quot;, &quot;TypeScript&quot;]
 }"
-          class="input-area"
+            class="input-area"
         ></textarea>
       </div>
     </div>
@@ -90,24 +90,25 @@
           </div>
           <div class="copy-actions">
             <button @click="copyMergedJson" class="copy-btn">复制合并后的 JSON</button>
+            <span v-if="copySuccess" class="copy-success">已复制到剪贴板!</span>
           </div>
         </div>
       </div>
 
       <div class="result-group">
         <h3>共同属性 (值相同)</h3>
-        <p class="description">两个 JSON 中具有相同值的属性 (共 {{ commonProps.length }} 个)</p>
+        <p class="description">两个 JSON 中具有相同值的属性 (共 {{ Object.keys(commonProps).length }} 个)</p>
         <div class="result-box">
           <div v-for="(item, key) in commonProps" :key="key" class="result-item">
             <span class="key">{{ key }}:</span> <span class="value">{{ formatValue(item) }}</span>
           </div>
-          <div v-if="commonProps.length === 0" class="empty-result">无共同值属性</div>
+          <div v-if="Object.keys(commonProps).length === 0" class="empty-result">无共同值属性</div>
         </div>
       </div>
 
       <div class="result-group">
         <h3>共同属性 (值不同)</h3>
-        <p class="description">两个 JSON 中值不同的属性 (共 {{ differentProps.length }} 个)</p>
+        <p class="description">两个 JSON 中值不同的属性 (共 {{ Object.keys(differentProps).length }} 个)</p>
         <div class="result-box">
           <div v-for="(diff, key) in differentProps" :key="key" class="result-item different">
             <div class="prop-key">{{ key }}:</div>
@@ -116,39 +117,35 @@
               <div class="prop-b">B: <span>{{ formatValue(diff.b) }}</span></div>
             </div>
           </div>
-          <div v-if="differentProps.length === 0" class="empty-result">无值不同属性</div>
+          <div v-if="Object.keys(differentProps).length === 0" class="empty-result">无值不同属性</div>
         </div>
       </div>
 
       <div class="result-group">
         <h3>仅在 A 中存在的属性</h3>
-        <p class="description">仅在 JSON A 中存在的属性 (共 {{ onlyInA.length }} 个)</p>
+        <p class="description">仅在 JSON A 中存在的属性 (共 {{ Object.keys(onlyInA).length }} 个)</p>
         <div class="result-box">
           <div v-for="(value, key) in onlyInA" :key="key" class="result-item">
             <span class="key">{{ key }}:</span> <span class="value">{{ formatValue(value) }}</span>
           </div>
-          <div v-if="onlyInA.length === 0" class="empty-result">无独有属性</div>
+          <div v-if="Object.keys(onlyInA).length === 0" class="empty-result">无独有属性</div>
         </div>
       </div>
 
       <div class="result-group">
         <h3>仅在 B 中存在的属性</h3>
-        <p class="description">仅在 JSON B 中存在的属性 (共 {{ onlyInB.length }} 个)</p>
+        <p class="description">仅在 JSON B 中存在的属性 (共 {{ Object.keys(onlyInB).length }} 个)</p>
         <div class="result-box">
           <div v-for="(value, key) in onlyInB" :key="key" class="result-item">
             <span class="key">{{ key }}:</span> <span class="value">{{ formatValue(value) }}</span>
           </div>
-          <div v-if="onlyInB.length === 0" class="empty-result">无独有属性</div>
+          <div v-if="Object.keys(onlyInB).length === 0" class="empty-result">无独有属性</div>
         </div>
       </div>
     </div>
 
     <div v-if="error" class="error-message">
       {{ error }}
-    </div>
-
-    <div v-if="copySuccess" class="copy-message">
-      已复制到剪贴板！
     </div>
   </div>
 </template>
@@ -182,18 +179,6 @@ export default {
   computed: {
     formattedMergedJson() {
       return this.mergedJson ? JSON.stringify(this.mergedJson, null, 2) : '';
-    },
-    commonProps: function() {
-      return this._commonProps || {};
-    },
-    onlyInA: function() {
-      return this._onlyInA || {};
-    },
-    onlyInB: function() {
-      return this._onlyInB || {};
-    },
-    differentProps: function() {
-      return this._differentProps || {};
     }
   },
   methods: {
@@ -212,58 +197,58 @@ export default {
         this.error = '';
         const objA = this.parseJson(this.jsonA);
         const objB = this.parseJson(this.jsonB);
-        
+
         // 重置结果
-        this._commonProps = {};
-        this._differentProps = {};
-        this._onlyInA = {};
-        this._onlyInB = {};
-        
+        this.commonProps = {};
+        this.differentProps = {};
+        this.onlyInA = {};
+        this.onlyInB = {};
+
         // 获取所有键
         const keysA = Object.keys(objA);
         const keysB = Object.keys(objB);
-        
+
         // 统计初始化
         this.stats.aPropsCount = keysA.length;
         this.stats.bPropsCount = keysB.length;
-        
+
         // 分析在 A 中的键
         for (const key of keysA) {
           if (keysB.includes(key)) {
             // 键在两个对象中都存在
             const valueA = objA[key];
             const valueB = objB[key];
-            
+
             // 比较值是否相等（考虑深比较）
             if (JSON.stringify(valueA) === JSON.stringify(valueB)) {
               // 值相等
-              this._commonProps[key] = valueA;
+              this.commonProps[key] = valueA;
             } else {
               // 值不等
-              this._differentProps[key] = {
+              this.differentProps[key] = {
                 a: valueA,
                 b: valueB
               };
             }
           } else {
             // 键只在 A 中
-            this._onlyInA[key] = objA[key];
+            this.onlyInA[key] = objA[key];
           }
         }
-        
+
         // 分析只在 B 中的键
         for (const key of keysB) {
           if (!keysA.includes(key)) {
-            this._onlyInB[key] = objB[key];
+            this.onlyInB[key] = objB[key];
           }
         }
-        
+
         // 更新统计信息
-        this.stats.commonPropsCount = Object.keys(this._commonProps).length;
-        this.stats.differentValuesCount = Object.keys(this._differentProps).length;
-        this.stats.onlyInACount = Object.keys(this._onlyInA).length;
-        this.stats.onlyInBCount = Object.keys(this._onlyInB).length;
-        
+        this.stats.commonPropsCount = Object.keys(this.commonProps).length;
+        this.stats.differentValuesCount = Object.keys(this.differentProps).length;
+        this.stats.onlyInACount = Object.keys(this.onlyInA).length;
+        this.stats.onlyInBCount = Object.keys(this.onlyInB).length;
+
         this.hasResults = true;
 
         // 默认生成一次合并结果
@@ -279,36 +264,36 @@ export default {
           return;
         }
 
-        const objA = this.parseJson(this.jsonA);
-        const objB = this.parseJson(this.jsonB);
-        
+        // const objA = this.parseJson(this.jsonA);
+        // const objB = this.parseJson(this.jsonB);
+
         // 创建合并对象
         const merged = {};
-        
+
         // 添加只在 A 中的属性
-        for (const key in this._onlyInA) {
-          merged[key] = this._onlyInA[key];
+        for (const key in this.onlyInA) {
+          merged[key] = this.onlyInA[key];
         }
-        
+
         // 添加只在 B 中的属性
-        for (const key in this._onlyInB) {
-          merged[key] = this._onlyInB[key];
+        for (const key in this.onlyInB) {
+          merged[key] = this.onlyInB[key];
         }
-        
+
         // 添加共同且值相同的属性
-        for (const key in this._commonProps) {
-          merged[key] = this._commonProps[key];
+        for (const key in this.commonProps) {
+          merged[key] = this.commonProps[key];
         }
-        
+
         // 添加共同但值不同的属性（根据选择）
-        for (const key in this._differentProps) {
+        for (const key in this.differentProps) {
           if (this.mergePreference === 'a') {
-            merged[key] = this._differentProps[key].a;
+            merged[key] = this.differentProps[key].a;
           } else {
-            merged[key] = this._differentProps[key].b;
+            merged[key] = this.differentProps[key].b;
           }
         }
-        
+
         this.mergedJson = merged;
       } catch (e) {
         this.error = `合并 JSON 时出错: ${e.message}`;
@@ -316,26 +301,45 @@ export default {
     },
     copyMergedJson() {
       if (!this.mergedJson) return;
-      
+
       const textToCopy = JSON.stringify(this.mergedJson, null, 2);
-      navigator.clipboard.writeText(textToCopy)
-        .then(() => {
-          this.copySuccess = true;
-          setTimeout(() => {
-            this.copySuccess = false;
-          }, 2000);
-        })
-        .catch(err => {
-          this.error = `复制到剪贴板失败: ${err.message}`;
-        });
+
+      // 使用 textarea 方法进行复制，兼容性更好
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+
+      // 选择并复制内容
+      textarea.select();
+      let success = false;
+      try {
+        success = document.execCommand('copy');
+      } catch (err) {
+        success = false;
+      }
+
+      // 清理并显示复制结果
+      document.body.removeChild(textarea);
+
+      if (success) {
+        this.copySuccess = true;
+        setTimeout(() => {
+          this.copySuccess = false;
+        }, 2000);
+      } else {
+        this.error = '复制到剪贴板失败，请手动复制。';
+      }
     },
     clearAll() {
       this.jsonA = '';
       this.jsonB = '';
-      this._commonProps = {};
-      this._differentProps = {};
-      this._onlyInA = {};
-      this._onlyInB = {};
+      this.commonProps = {};
+      this.differentProps = {};
+      this.onlyInA = {};
+      this.onlyInB = {};
       this.stats = {
         aPropsCount: 0,
         bPropsCount: 0,
@@ -585,6 +589,9 @@ button {
 .copy-actions {
   margin-top: 10px;
   text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .copy-btn {
@@ -596,6 +603,12 @@ button {
 
 .copy-btn:hover {
   background-color: #6c7a7d;
+}
+
+.copy-success {
+  color: #27ae60;
+  margin-left: 10px;
+  font-size: 12px;
 }
 
 .merged-result {
@@ -617,23 +630,11 @@ button {
   border-radius: 4px;
 }
 
-.copy-message {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #27ae60;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 4px;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
 @media (max-width: 768px) {
   .input-container {
     grid-template-columns: 1fr;
   }
-  
+
   .results {
     grid-template-columns: 1fr;
   }
