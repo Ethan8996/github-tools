@@ -133,9 +133,6 @@ export default {
       this.hasResults = false;
     },
     copyResult(resultArray) {
-      if (resultArray.length === 0) {
-        return;
-      }
       const text = resultArray.join('\n');
       navigator.clipboard.writeText(text)
         .catch(err => {
