@@ -46,6 +46,7 @@
           <div v-for="item in intersection" :key="item" class="result-item">{{ item }}</div>
           <div v-if="intersection.length === 0" class="empty-result">无交集</div>
         </div>
+        <button @click="copyResult(intersection)" class="copy-btn" :disabled="intersection.length === 0">复制到剪贴板</button>
       </div>
 
       <div class="result-group">
@@ -55,6 +56,7 @@
           <div v-for="item in union" :key="item" class="result-item">{{ item }}</div>
           <div v-if="union.length === 0" class="empty-result">无并集</div>
         </div>
+        <button @click="copyResult(union)" class="copy-btn" :disabled="union.length === 0">复制到剪贴板</button>
       </div>
 
       <div class="result-group">
@@ -64,6 +66,7 @@
           <div v-for="item in differenceA" :key="item" class="result-item">{{ item }}</div>
           <div v-if="differenceA.length === 0" class="empty-result">无差集</div>
         </div>
+        <button @click="copyResult(differenceA)" class="copy-btn" :disabled="differenceA.length === 0">复制到剪贴板</button>
       </div>
 
       <div class="result-group">
@@ -73,6 +76,7 @@
           <div v-for="item in differenceB" :key="item" class="result-item">{{ item }}</div>
           <div v-if="differenceB.length === 0" class="empty-result">无差集</div>
         </div>
+        <button @click="copyResult(differenceB)" class="copy-btn" :disabled="differenceB.length === 0">复制到剪贴板</button>
       </div>
     </div>
   </div>
@@ -127,6 +131,13 @@ export default {
       this.differenceA = [];
       this.differenceB = [];
       this.hasResults = false;
+    },
+    copyResult(resultArray) {
+      const text = resultArray.join('\n');
+      navigator.clipboard.writeText(text)
+        .catch(err => {
+          console.error('复制失败: ', err);
+        });
     }
   }
 }
@@ -227,6 +238,23 @@ button {
 
 .clear-btn:hover {
   background-color: #c0392b;
+}
+
+.copy-btn {
+  background-color: #27ae60;
+  color: white;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.copy-btn:hover:not(:disabled) {
+  background-color: #229954;
+}
+
+.copy-btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .results {

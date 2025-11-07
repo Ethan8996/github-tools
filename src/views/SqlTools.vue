@@ -271,12 +271,8 @@ export default {
     copyToClipboard(text) {
       if (text && text !== "请输入数据" && text !== "请输入表名") {
         navigator.clipboard.writeText(text)
-          .then(() => {
-            alert("已复制到剪贴板!");
-          })
           .catch(err => {
             console.error('复制失败: ', err);
-            alert("复制失败，请手动复制。");
           });
       }
     }
@@ -385,7 +381,7 @@ button:hover {
 }
 
 .copy-btn:hover {
-  background-color: #219653;
+  background-color: #229954;
 }
 
 .output {
