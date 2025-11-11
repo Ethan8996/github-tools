@@ -123,15 +123,31 @@ export default {
       const keys = path.split('.');
       let current = obj;
       
+      // Check for dangerous property names to prevent prototype pollution
+      const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+      
       for (let i = 0; i < keys.length - 1; i++) {
         const key = keys[i];
+        
+        // Skip dangerous keys
+        if (dangerousKeys.includes(key)) {
+          return;
+        }
+        
         if (!current[key] || typeof current[key] !== 'object') {
           current[key] = {};
         }
         current = current[key];
       }
       
-      current[keys[keys.length - 1]] = value;
+      const lastKey = keys[keys.length - 1];
+      
+      // Skip dangerous keys
+      if (dangerousKeys.includes(lastKey)) {
+        return;
+      }
+      
+      current[lastKey] = value;
     },
     
     convert() {
