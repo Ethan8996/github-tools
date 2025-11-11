@@ -18,6 +18,10 @@
         <h2>JSON 比较工具</h2>
         <p>比较两个 JSON 数据之间的差异</p>
       </router-link>
+      <router-link to="/properties-to-json" class="tool-card">
+        <h2>Properties 转 JSON</h2>
+        <p>将 Properties 格式转换为 JSON 格式</p>
+      </router-link>
       <!-- 可以继续添加更多工具卡片 -->
     </div>
   </div>
