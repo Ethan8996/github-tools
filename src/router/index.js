@@ -26,6 +26,11 @@ const routes = [
     path: '/json-compare',
     name: 'JsonCompare',
     component: () => import('../views/JsonCompare.vue')
+  },
+  {
+    path: '/properties-to-json',
+    name: 'PropertiesToJson',
+    component: () => import('../views/PropertiesToJson.vue')
   }
 ]
 
