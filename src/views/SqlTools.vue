@@ -22,6 +22,13 @@
           >
             SQL 查询生成器
           </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'insertAggregator' }" 
+            @click="activeTab = 'insertAggregator'"
+          >
+            INSERT 语句聚合器
+          </button>
         </div>
 
         <!-- SQL IN 参数转换 -->
@@ -133,6 +140,36 @@
           <div class="output">{{ sqlGen.queryOutput }}</div>
           <button @click="copyToClipboard(sqlGen.queryOutput)" class="copy-btn">复制 SQL</button>
         </div>
+
+        <!-- INSERT 语句聚合器 -->
+        <div v-if="activeTab === 'insertAggregator'" class="tab-content">
+          <h2>INSERT 语句聚合器</h2>
+          <div class="form-group">
+            <label for="insertInput">输入多条 INSERT 语句 (每条语句一行或多行):</label>
+            <textarea 
+              id="insertInput" 
+              v-model="insertAgg.inputText" 
+              placeholder="例如:
+INSERT INTO scada_i18n_message (id, message_key, lang_code, message_value, module, create_time, update_time, remark) VALUES(1989241743978532865, 'protocol.point.liquidResidualRateUsed', 'en', 'Liquid Residual Moisture Check', 'protocol', '2025-11-14 15:59:24', '2025-11-14 15:59:24', NULL);
+INSERT INTO scada_i18n_message (id, message_key, lang_code, message_value, module, create_time, update_time, remark) VALUES(1989240908590616578, 'protocol.point.liquidResidualRateUsed', 'zh-cn', '液体残余率使用选配', 'protocol', '2025-11-14 15:56:05', '2025-11-14 15:56:05', NULL);"
+            ></textarea>
+          </div>
+
+          <div class="options">
+            <label>
+              <input type="checkbox" v-model="insertAgg.addOnDuplicate"> 添加 ON DUPLICATE KEY UPDATE
+            </label>
+            <label>
+              <input type="checkbox" v-model="insertAgg.removeIdColumn"> 去除 id 列
+            </label>
+          </div>
+
+          <button @click="aggregateInsertStatements" class="action-btn">聚合 INSERT 语句</button>
+          <button @click="clearInsertAggInput" class="clear-btn">清空输入</button>
+
+          <div class="output">{{ insertAgg.outputText }}</div>
+          <button @click="copyToClipboard(insertAgg.outputText)" class="copy-btn">复制结果</button>
+        </div>
       </div>
     </div>
   </div>
@@ -162,6 +199,12 @@ export default {
         countQuery: false,
         distinctQuery: false,
         queryOutput: ''
+      },
+      insertAgg: {
+        inputText: '',
+        outputText: '',
+        addOnDuplicate: false,
+        removeIdColumn: false
       }
     }
   },
@@ -267,9 +310,155 @@ export default {
       this.sqlGen.queryOutput = '';
     },
 
+    // INSERT 语句聚合器功能
+    aggregateInsertStatements() {
+      const inputText = this.insertAgg.inputText.trim();
+      
+      if (!inputText) {
+        this.insertAgg.outputText = "请输入 INSERT 语句";
+        return;
+      }
+
+      try {
+        // 解析 INSERT 语句
+        const insertStatements = this.parseInsertStatements(inputText);
+        
+        if (insertStatements.length === 0) {
+          this.insertAgg.outputText = "未找到有效的 INSERT 语句";
+          return;
+        }
+
+        // 验证所有语句是否针对同一张表
+        const tableName = insertStatements[0].tableName;
+        const columns = insertStatements[0].columns;
+        
+        for (let i = 1; i < insertStatements.length; i++) {
+          if (insertStatements[i].tableName !== tableName) {
+            this.insertAgg.outputText = "错误：INSERT 语句必须针对同一张表";
+            return;
+          }
+          if (JSON.stringify(insertStatements[i].columns) !== JSON.stringify(columns)) {
+            this.insertAgg.outputText = "错误：所有 INSERT 语句的列名必须相同";
+            return;
+          }
+        }
+
+        // 处理列和值（如果需要去除 id 列）
+        let finalColumns = [...columns];
+        let finalValues = insertStatements.map(stmt => stmt.values);
+        
+        if (this.insertAgg.removeIdColumn) {
+          const idIndex = finalColumns.findIndex(col => col.toLowerCase() === 'id');
+          if (idIndex !== -1) {
+            finalColumns.splice(idIndex, 1);
+            finalValues = finalValues.map(values => {
+              const newValues = [...values];
+              newValues.splice(idIndex, 1);
+              return newValues;
+            });
+          }
+        }
+
+        // 构建聚合的 INSERT 语句
+        let result = `INSERT INTO ${tableName} (${finalColumns.join(', ')}) VALUES\n`;
+        
+        // 添加所有值行
+        result += finalValues.map(values => `(${values.join(', ')})`).join(',\n');
+
+        // 添加 ON DUPLICATE KEY UPDATE 子句
+        if (this.insertAgg.addOnDuplicate) {
+          const updateClauses = finalColumns.map(col => `\`${col}\`=VALUES(\`${col}\`)`);
+          result += `\nON DUPLICATE KEY UPDATE ${updateClauses.join(', ')}`;
+        }
+
+        result += ';';
+        
+        this.insertAgg.outputText = result;
+      } catch (error) {
+        this.insertAgg.outputText = `解析错误: ${error.message}`;
+      }
+    },
+
+    parseInsertStatements(text) {
+      const insertStatements = [];
+      
+      // 使用正则表达式匹配 INSERT 语句
+      // 匹配 INSERT INTO table_name (columns) VALUES (values)
+      const regex = /INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/gi;
+      
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        const tableName = match[1].trim();
+        const columnsStr = match[2].trim();
+        const valuesStr = match[3].trim();
+        
+        // 解析列名
+        const columns = columnsStr.split(',').map(col => col.trim());
+        
+        // 解析值
+        const values = this.parseValues(valuesStr);
+        
+        insertStatements.push({
+          tableName,
+          columns,
+          values
+        });
+      }
+      
+      return insertStatements;
+    },
+
+    parseValues(valuesStr) {
+      const values = [];
+      let currentValue = '';
+      let inString = false;
+      let stringChar = '';
+      let depth = 0;
+      
+      for (let i = 0; i < valuesStr.length; i++) {
+        const char = valuesStr[i];
+        const prevChar = i > 0 ? valuesStr[i - 1] : '';
+        
+        if ((char === '"' || char === "'") && prevChar !== '\\') {
+          if (!inString) {
+            inString = true;
+            stringChar = char;
+          } else if (char === stringChar) {
+            inString = false;
+          }
+        }
+        
+        if (!inString) {
+          if (char === '(') {
+            depth++;
+          } else if (char === ')') {
+            depth--;
+          }
+        }
+        
+        if (char === ',' && !inString && depth === 0) {
+          values.push(currentValue.trim());
+          currentValue = '';
+        } else {
+          currentValue += char;
+        }
+      }
+      
+      if (currentValue.trim()) {
+        values.push(currentValue.trim());
+      }
+      
+      return values;
+    },
+
+    clearInsertAggInput() {
+      this.insertAgg.inputText = '';
+      this.insertAgg.outputText = '';
+    },
+
     // 通用方法
     copyToClipboard(text) {
-      if (text && text !== "请输入数据" && text !== "请输入表名") {
+      if (text && text !== "请输入数据" && text !== "请输入表名" && text !== "请输入 INSERT 语句" && text !== "未找到有效的 INSERT 语句" && !text.startsWith("错误：") && !text.startsWith("解析错误:")) {
         navigator.clipboard.writeText(text)
           .catch(err => {
             console.error('复制失败: ', err);
