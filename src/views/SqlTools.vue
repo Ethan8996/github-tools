@@ -383,12 +383,12 @@ export default {
       const insertStatements = [];
       
       // 使用正则表达式匹配 INSERT 语句的开始部分，支持反引号标识符
-      const startRegex = /INSERT\s+INTO\s+((?:`\w+`|\w+))\s*\(/gi;
+      const startRegex = /INSERT\s+INTO\s+(`\w+`|\w+)\s*\(/gi;
       
       let match;
       while ((match = startRegex.exec(text)) !== null) {
-        // 移除表名两端的反引号
-        const tableName = match[1].trim().replace(/^`|`$/g, '');
+        // 只移除成对的两端反引号
+        const tableName = match[1].trim().replace(/^`(.*)`$/, '$1') || match[1].trim();
         const startPos = match.index + match[0].length;
         
         // 解析列名部分 - 找到匹配的右括号
@@ -396,8 +396,11 @@ export default {
         if (columnsEnd === -1) continue;
         
         const columnsStr = text.substring(startPos, columnsEnd).trim();
-        // 移除列名两端的反引号
-        const columns = columnsStr.split(',').map(col => col.trim().replace(/^`|`$/g, ''));
+        // 只移除成对的两端反引号
+        const columns = columnsStr.split(',').map(col => {
+          const trimmed = col.trim();
+          return trimmed.replace(/^`(.*)`$/, '$1') || trimmed;
+        });
         
         // 查找 VALUES 关键字
         const valuesMatch = /\s*VALUES\s*\(/i.exec(text.substring(columnsEnd + 1));
