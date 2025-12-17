@@ -387,8 +387,8 @@ export default {
       
       let match;
       while ((match = startRegex.exec(text)) !== null) {
-        // 只移除成对的两端反引号
-        const tableName = match[1].trim().replace(/^`(.*)`$/, '$1') || match[1].trim();
+        // 只移除成对的两端反引号（如果不匹配则返回原字符串）
+        const tableName = match[1].trim().replace(/^`(.*)`$/, '$1');
         const startPos = match.index + match[0].length;
         
         // 解析列名部分 - 找到匹配的右括号
@@ -397,10 +397,7 @@ export default {
         
         const columnsStr = text.substring(startPos, columnsEnd).trim();
         // 只移除成对的两端反引号
-        const columns = columnsStr.split(',').map(col => {
-          const trimmed = col.trim();
-          return trimmed.replace(/^`(.*)`$/, '$1') || trimmed;
-        });
+        const columns = columnsStr.split(',').map(col => col.trim().replace(/^`(.*)`$/, '$1'));
         
         // 查找 VALUES 关键字
         const valuesMatch = /\s*VALUES\s*\(/i.exec(text.substring(columnsEnd + 1));
