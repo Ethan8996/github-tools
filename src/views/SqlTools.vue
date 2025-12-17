@@ -382,12 +382,13 @@ export default {
     parseInsertStatements(text) {
       const insertStatements = [];
       
-      // 使用正则表达式匹配 INSERT 语句的开始部分
-      const startRegex = /INSERT\s+INTO\s+(\w+)\s*\(/gi;
+      // 使用正则表达式匹配 INSERT 语句的开始部分，支持反引号标识符
+      const startRegex = /INSERT\s+INTO\s+(`\w+`|\w+)\s*\(/gi;
       
       let match;
       while ((match = startRegex.exec(text)) !== null) {
-        const tableName = match[1].trim();
+        // 只移除成对的两端反引号（如果不匹配则返回原字符串）
+        const tableName = match[1].trim().replace(/^`(.*)`$/, '$1');
         const startPos = match.index + match[0].length;
         
         // 解析列名部分 - 找到匹配的右括号
@@ -395,7 +396,8 @@ export default {
         if (columnsEnd === -1) continue;
         
         const columnsStr = text.substring(startPos, columnsEnd).trim();
-        const columns = columnsStr.split(',').map(col => col.trim());
+        // 只移除成对的两端反引号
+        const columns = columnsStr.split(',').map(col => col.trim().replace(/^`(.*)`$/, '$1'));
         
         // 查找 VALUES 关键字
         const valuesMatch = /\s*VALUES\s*\(/i.exec(text.substring(columnsEnd + 1));
@@ -432,11 +434,18 @@ export default {
         const prevChar = i > 0 ? text[i - 1] : '';
         const nextChar = i < text.length - 1 ? text[i + 1] : '';
         
-        // Handle quotes (need to consider SQL single quote escaping '')
-        if ((char === '"' || char === "'") && prevChar !== '\\') {
+        // Handle quotes (including backticks and considering SQL escaping)
+        if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
           // Check if this is SQL escaped single quote (two consecutive single quotes)
           if (char === "'" && inString && stringChar === "'" && nextChar === "'") {
             // This is an escaped single quote, skip both
+            i++;
+            continue;
+          }
+          
+          // Check if this is SQL escaped backtick (two consecutive backticks)
+          if (char === '`' && inString && stringChar === '`' && nextChar === '`') {
+            // This is an escaped backtick, skip both
             i++;
             continue;
           }
@@ -446,6 +455,7 @@ export default {
             stringChar = char;
           } else if (char === stringChar) {
             inString = false;
+            stringChar = '';
           }
         }
         
@@ -476,8 +486,8 @@ export default {
         const prevChar = i > 0 ? valuesStr[i - 1] : '';
         const nextChar = i < valuesStr.length - 1 ? valuesStr[i + 1] : '';
         
-        // Handle quotes (need to consider SQL single quote escaping '')
-        if ((char === '"' || char === "'") && prevChar !== '\\') {
+        // Handle quotes (including backticks and considering SQL escaping)
+        if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
           // Check if this is SQL escaped single quote (two consecutive single quotes)
           if (char === "'" && inString && stringChar === "'" && nextChar === "'") {
             // This is an escaped single quote, keep both quotes and skip the next one
@@ -487,11 +497,21 @@ export default {
             continue;
           }
           
+          // Check if this is SQL escaped backtick (two consecutive backticks)
+          if (char === '`' && inString && stringChar === '`' && nextChar === '`') {
+            // This is an escaped backtick, keep both and skip the next one
+            currentValue += char;
+            currentValue += nextChar;
+            i++; // Skip the next backtick
+            continue;
+          }
+          
           if (!inString) {
             inString = true;
             stringChar = char;
           } else if (char === stringChar) {
             inString = false;
+            stringChar = '';
           }
         }
         
