@@ -480,7 +480,7 @@ export default {
       
       return statements;
     },
-
+    
     extractValuesContent(text) {
       // text 应该以 '(' 开头
       if (!text.startsWith('(')) return null;
