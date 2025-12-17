@@ -382,34 +382,34 @@ export default {
     parseInsertStatements(text) {
       const insertStatements = [];
       
-      // 使用正则表达式匹配 INSERT 语句的开始部分，支持反引号标识符
-      const startRegex = /INSERT\s+INTO\s+(`\w+`|\w+)\s*\(/gi;
+      // 预处理：标准化换行和空格，但保留语句完整性
+      const normalizedText = text.replace(/\r\n/g, '\n').replace(/\s+/g, ' ').trim();
       
-      let match;
-      while ((match = startRegex.exec(text)) !== null) {
-        // 只移除成对的两端反引号（如果不匹配则返回原字符串）
+      // 分割多条 INSERT 语句（通过分号分割，但要注意字符串中的分号）
+      const statements = this.splitStatements(normalizedText);
+      
+      for (const statement of statements) {
+        if (!statement.trim()) continue;
+        
+        // 使用正则匹配基本结构，支持反引号标识符
+        const match = statement.match(/INSERT\s+INTO\s+(`?\w+`?)\s*\(([^)]+)\)\s*VALUES\s*\(/i);
+        
+        if (!match) continue;
+        
         const tableName = match[1].trim().replace(/^`(.*)`$/, '$1');
-        const startPos = match.index + match[0].length;
+        const columnsStr = match[2].trim();
         
-        // 解析列名部分 - 找到匹配的右括号
-        const columnsEnd = this.findMatchingParenthesis(text, startPos - 1);
-        if (columnsEnd === -1) continue;
-        
-        const columnsStr = text.substring(startPos, columnsEnd).trim();
-        // 只移除成对的两端反引号
+        // 解析列名（简单，因为列名不含特殊字符）
         const columns = columnsStr.split(',').map(col => col.trim().replace(/^`(.*)`$/, '$1'));
         
-        // 查找 VALUES 关键字
-        const valuesMatch = /\s*VALUES\s*\(/i.exec(text.substring(columnsEnd + 1));
-        if (!valuesMatch) continue;
+        // 从 VALUES( 之后开始提取值部分
+        const valuesStartIndex = statement.indexOf('VALUES') + 6; // 'VALUES'.length
+        const valuesContent = statement.substring(valuesStartIndex).trim();
         
-        const valuesStart = columnsEnd + 1 + valuesMatch.index + valuesMatch[0].length;
+        // 使用状态机提取 VALUES 括号内的内容
+        const valuesStr = this.extractValuesContent(valuesContent);
         
-        // 解析值部分 - 找到匹配的右括号
-        const valuesEnd = this.findMatchingParenthesis(text, valuesStart - 1);
-        if (valuesEnd === -1) continue;
-        
-        const valuesStr = text.substring(valuesStart, valuesEnd).trim();
+        if (!valuesStr) continue;
         
         // 解析值
         const values = this.parseValues(valuesStr);
@@ -423,30 +423,33 @@ export default {
       
       return insertStatements;
     },
-    
-    findMatchingParenthesis(text, startPos) {
-      let depth = 1;
+
+    splitStatements(text) {
+      const statements = [];
+      let currentStatement = '';
       let inString = false;
       let stringChar = '';
       
-      for (let i = startPos + 1; i < text.length; i++) {
+      for (let i = 0; i < text.length; i++) {
         const char = text[i];
         const prevChar = i > 0 ? text[i - 1] : '';
         const nextChar = i < text.length - 1 ? text[i + 1] : '';
         
-        // Handle quotes (including backticks and considering SQL escaping)
+        // 处理字符串状态
         if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
-          // Check if this is SQL escaped single quote (two consecutive single quotes)
+          // 检查 SQL 转义单引号
           if (char === "'" && inString && stringChar === "'" && nextChar === "'") {
-            // This is an escaped single quote, skip both
-            i++;
+            currentStatement += char;
+            currentStatement += nextChar;
+            i++; // 跳过下一个单引号
             continue;
           }
           
-          // Check if this is SQL escaped backtick (two consecutive backticks)
+          // 检查 SQL 转义反引号
           if (char === '`' && inString && stringChar === '`' && nextChar === '`') {
-            // This is an escaped backtick, skip both
-            i++;
+            currentStatement += char;
+            currentStatement += nextChar;
+            i++; // 跳过下一个反引号
             continue;
           }
           
@@ -459,20 +462,89 @@ export default {
           }
         }
         
-        if (!inString) {
-          if (char === '(') {
-            depth++;
-          } else if (char === ')') {
-            depth--;
-            if (depth === 0) {
-              return i;
-            }
+        // 分号分割（只在字符串外部）
+        if (char === ';' && !inString) {
+          if (currentStatement.trim()) {
+            statements.push(currentStatement.trim());
           }
+          currentStatement = '';
+        } else {
+          currentStatement += char;
         }
       }
       
-      return -1;
+      // 添加最后一条语句
+      if (currentStatement.trim()) {
+        statements.push(currentStatement.trim());
+      }
+      
+      return statements;
     },
+
+    extractValuesContent(text) {
+      // text 应该以 '(' 开头
+      if (!text.startsWith('(')) return null;
+      
+      let depth = 0;
+      let inString = false;
+      let stringChar = '';
+      let content = '';
+      
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const prevChar = i > 0 ? text[i - 1] : '';
+        const nextChar = i < text.length - 1 ? text[i + 1] : '';
+        
+        // 处理字符串状态
+        if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
+          // 检查 SQL 转义单引号
+          if (char === "'" && inString && stringChar === "'" && nextChar === "'") {
+            content += char;
+            content += nextChar;
+            i++; // 跳过下一个单引号
+            continue;
+          }
+          
+          // 检查 SQL 转义反引号
+          if (char === '`' && inString && stringChar === '`' && nextChar === '`') {
+            content += char;
+            content += nextChar;
+            i++; // 跳过下一个反引号
+            continue;
+          }
+          
+          if (!inString) {
+            inString = true;
+            stringChar = char;
+          } else if (char === stringChar) {
+            inString = false;
+            stringChar = '';
+          }
+        }
+        
+        // 处理括号（只在字符串外部）
+        if (!inString) {
+          if (char === '(') {
+            depth++;
+            if (depth === 1) continue; // 跳过最外层的左括号
+          } else if (char === ')') {
+            depth--;
+            if (depth === 0) {
+              // 找到匹配的右括号，返回内容
+              return content;
+            }
+          }
+        }
+        
+        if (depth > 0) {
+          content += char;
+        }
+      }
+      
+      return null; // 没有找到匹配的括号
+    },
+    
+
 
     parseValues(valuesStr) {
       const values = [];
@@ -486,23 +558,23 @@ export default {
         const prevChar = i > 0 ? valuesStr[i - 1] : '';
         const nextChar = i < valuesStr.length - 1 ? valuesStr[i + 1] : '';
         
-        // Handle quotes (including backticks and considering SQL escaping)
+        // 处理引号（需要考虑 SQL 的单引号转义 ''）
         if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
-          // Check if this is SQL escaped single quote (two consecutive single quotes)
+          // 检查是否是 SQL 转义的单引号（两个连续单引号）
           if (char === "'" && inString && stringChar === "'" && nextChar === "'") {
-            // This is an escaped single quote, keep both quotes and skip the next one
+            // 这是转义的单引号，保留两个单引号并跳过下一个
             currentValue += char;
             currentValue += nextChar;
-            i++; // Skip the next single quote
+            i++; // 跳过下一个单引号
             continue;
           }
           
-          // Check if this is SQL escaped backtick (two consecutive backticks)
+          // 检查是否是 SQL 转义的反引号（两个连续反引号）
           if (char === '`' && inString && stringChar === '`' && nextChar === '`') {
-            // This is an escaped backtick, keep both and skip the next one
+            // 这是转义的反引号，保留两个反引号并跳过下一个
             currentValue += char;
             currentValue += nextChar;
-            i++; // Skip the next backtick
+            i++; // 跳过下一个反引号
             continue;
           }
           
@@ -515,6 +587,7 @@ export default {
           }
         }
         
+        // 处理括号深度（只在字符串外部）
         if (!inString) {
           if (char === '(') {
             depth++;
@@ -523,6 +596,7 @@ export default {
           }
         }
         
+        // 处理逗号分隔（只在字符串外部且深度为0时）
         if (char === ',' && !inString && depth === 0) {
           values.push(currentValue.trim());
           currentValue = '';
