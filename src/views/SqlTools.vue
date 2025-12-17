@@ -382,18 +382,32 @@ export default {
     parseInsertStatements(text) {
       const insertStatements = [];
       
-      // 使用正则表达式匹配 INSERT 语句
-      // 匹配 INSERT INTO table_name (columns) VALUES (values)
-      const regex = /INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/gi;
+      // 使用正则表达式匹配 INSERT 语句的开始部分
+      const startRegex = /INSERT\s+INTO\s+(\w+)\s*\(/gi;
       
       let match;
-      while ((match = regex.exec(text)) !== null) {
+      while ((match = startRegex.exec(text)) !== null) {
         const tableName = match[1].trim();
-        const columnsStr = match[2].trim();
-        const valuesStr = match[3].trim();
+        const startPos = match.index + match[0].length;
         
-        // 解析列名
+        // 解析列名部分 - 找到匹配的右括号
+        const columnsEnd = this.findMatchingParenthesis(text, startPos - 1);
+        if (columnsEnd === -1) continue;
+        
+        const columnsStr = text.substring(startPos, columnsEnd).trim();
         const columns = columnsStr.split(',').map(col => col.trim());
+        
+        // 查找 VALUES 关键字
+        const valuesMatch = /\s*VALUES\s*\(/i.exec(text.substring(columnsEnd + 1));
+        if (!valuesMatch) continue;
+        
+        const valuesStart = columnsEnd + 1 + valuesMatch.index + valuesMatch[0].length;
+        
+        // 解析值部分 - 找到匹配的右括号
+        const valuesEnd = this.findMatchingParenthesis(text, valuesStart - 1);
+        if (valuesEnd === -1) continue;
+        
+        const valuesStr = text.substring(valuesStart, valuesEnd).trim();
         
         // 解析值
         const values = this.parseValues(valuesStr);
@@ -407,6 +421,48 @@ export default {
       
       return insertStatements;
     },
+    
+    findMatchingParenthesis(text, startPos) {
+      let depth = 1;
+      let inString = false;
+      let stringChar = '';
+      
+      for (let i = startPos + 1; i < text.length; i++) {
+        const char = text[i];
+        const prevChar = i > 0 ? text[i - 1] : '';
+        const nextChar = i < text.length - 1 ? text[i + 1] : '';
+        
+        // Handle quotes (need to consider SQL single quote escaping '')
+        if ((char === '"' || char === "'") && prevChar !== '\\') {
+          // Check if this is SQL escaped single quote (two consecutive single quotes)
+          if (char === "'" && inString && stringChar === "'" && nextChar === "'") {
+            // This is an escaped single quote, skip both
+            i++;
+            continue;
+          }
+          
+          if (!inString) {
+            inString = true;
+            stringChar = char;
+          } else if (char === stringChar) {
+            inString = false;
+          }
+        }
+        
+        if (!inString) {
+          if (char === '(') {
+            depth++;
+          } else if (char === ')') {
+            depth--;
+            if (depth === 0) {
+              return i;
+            }
+          }
+        }
+      }
+      
+      return -1;
+    },
 
     parseValues(valuesStr) {
       const values = [];
@@ -418,8 +474,19 @@ export default {
       for (let i = 0; i < valuesStr.length; i++) {
         const char = valuesStr[i];
         const prevChar = i > 0 ? valuesStr[i - 1] : '';
+        const nextChar = i < valuesStr.length - 1 ? valuesStr[i + 1] : '';
         
+        // Handle quotes (need to consider SQL single quote escaping '')
         if ((char === '"' || char === "'") && prevChar !== '\\') {
+          // Check if this is SQL escaped single quote (two consecutive single quotes)
+          if (char === "'" && inString && stringChar === "'" && nextChar === "'") {
+            // This is an escaped single quote, keep both quotes and skip the next one
+            currentValue += char;
+            currentValue += nextChar;
+            i++; // Skip the next single quote
+            continue;
+          }
+          
           if (!inString) {
             inString = true;
             stringChar = char;
