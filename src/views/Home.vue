@@ -22,6 +22,10 @@
         <h2>Properties 转 JSON</h2>
         <p>将 Properties 格式转换为 JSON 格式</p>
       </router-link>
+      <router-link to="/docx-to-markdown" class="tool-card">
+        <h2>DOCX 转 Markdown</h2>
+        <p>将 Word 文档转换为 Markdown 格式</p>
+      </router-link>
       <!-- 可以继续添加更多工具卡片 -->
     </div>
   </div>
