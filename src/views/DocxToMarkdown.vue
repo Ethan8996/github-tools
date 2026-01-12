@@ -70,6 +70,20 @@
 import mammoth from 'mammoth';
 import TurndownService from 'turndown';
 
+// Mammoth configuration - style mapping
+const MAMMOTH_STYLE_MAP = [
+  "p[style-name='Heading 1'] => h1:fresh",
+  "p[style-name='Heading 2'] => h2:fresh",
+  "p[style-name='Heading 3'] => h3:fresh",
+  "p[style-name='Heading 4'] => h4:fresh",
+  "p[style-name='Heading 5'] => h5:fresh",
+  "p[style-name='Heading 6'] => h6:fresh",
+  "b => strong",
+  "i => em",
+  "strike => del",
+  "comment-reference => sup"
+];
+
 export default {
   name: 'DocxToMarkdown',
   data() {
@@ -134,20 +148,9 @@ export default {
         // Read the file as ArrayBuffer
         const arrayBuffer = await this.readFileAsArrayBuffer(this.selectedFile);
 
-        // Mammoth configuration - style mapping
+        // Configure Mammoth with style mapping
         const options = {
-          styleMap: [
-            "p[style-name='Heading 1'] => h1:fresh",
-            "p[style-name='Heading 2'] => h2:fresh",
-            "p[style-name='Heading 3'] => h3:fresh",
-            "p[style-name='Heading 4'] => h4:fresh",
-            "p[style-name='Heading 5'] => h5:fresh",
-            "p[style-name='Heading 6'] => h6:fresh",
-            "b => strong",
-            "i => em",
-            "strike => del",
-            "comment-reference => sup"
-          ]
+          styleMap: MAMMOTH_STYLE_MAP
         };
 
         // Convert DOCX to HTML using Mammoth
@@ -183,9 +186,28 @@ export default {
       });
     },
 
-    copyToClipboard() {
+    async copyToClipboard() {
       if (!this.markdownOutput) return;
 
+      try {
+        // Try modern Clipboard API first
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(this.markdownOutput);
+          this.successMessage = '已复制到剪贴板！';
+          setTimeout(() => {
+            this.successMessage = '';
+          }, 2000);
+        } else {
+          // Fallback to deprecated method for older browsers
+          this.copyToClipboardFallback();
+        }
+      } catch (err) {
+        // If modern API fails, use fallback
+        this.copyToClipboardFallback();
+      }
+    },
+
+    copyToClipboardFallback() {
       // Use textarea method for better compatibility
       const textarea = document.createElement('textarea');
       textarea.value = this.markdownOutput;
