@@ -31,6 +31,11 @@ const routes = [
     path: '/properties-to-json',
     name: 'PropertiesToJson',
     component: () => import('../views/PropertiesToJson.vue')
+  },
+  {
+    path: '/docx-to-markdown',
+    name: 'DocxToMarkdown',
+    component: () => import('../views/DocxToMarkdown.vue')
   }
 ]
 
