@@ -36,6 +36,11 @@ const routes = [
     path: '/docx-to-markdown',
     name: 'DocxToMarkdown',
     component: () => import('../views/DocxToMarkdown.vue')
+  },
+  {
+    path: '/markdown-editor',
+    name: 'MarkdownEditor',
+    component: () => import('../views/MarkdownEditor.vue')
   }
 ]
 
