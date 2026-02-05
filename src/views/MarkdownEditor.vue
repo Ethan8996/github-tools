@@ -46,10 +46,14 @@ export default {
     }
   },
   methods: {
+    generateTimestamp() {
+      return new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+    },
+
     initVditor() {
       this.vditor = new Vditor('vditor', {
         height: 600,
-        mode: 'ir', // 即时渲染模式
+        mode: 'ir', // Instant rendering mode (similar to Typora)
         placeholder: '请输入 Markdown 内容...',
         theme: 'classic',
         icon: 'ant',
@@ -113,9 +117,6 @@ export default {
         upload: {
           max: 10 * 1024 * 1024, // 10MB
           accept: 'image/*'
-        },
-        after: () => {
-          console.log('Vditor initialized');
         }
       });
     },
@@ -145,8 +146,7 @@ export default {
         const link = document.createElement('a');
         link.href = url;
         
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-        link.download = `markdown-${timestamp}.md`;
+        link.download = `markdown-${this.generateTimestamp()}.md`;
         
         document.body.appendChild(link);
         link.click();
@@ -208,7 +208,7 @@ export default {
 
         const opt = {
           margin: 10,
-          filename: `markdown-${new Date().toISOString().replace(/[:.]/g, '-').split('T')[0]}.pdf`,
+          filename: `markdown-${this.generateTimestamp()}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
