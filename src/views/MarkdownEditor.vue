@@ -427,7 +427,7 @@ export default {
         containerDiv.innerHTML = `<style>${this.getPdfStyleSheet()}</style>${renderedHtml}`;
 
         const pdfOptions = {
-          margin: { top: 15, right: 15, bottom: 15, left: 15 },
+          margin: 15,
           filename: `markdown-${this.generateTimestamp()}.pdf`,
           image: { type: 'jpeg', quality: 0.95 },
           html2canvas: { 
