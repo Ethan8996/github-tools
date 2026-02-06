@@ -7,7 +7,13 @@
 
     <div class="toolbar-actions">
       <button @click="downloadMarkdown" class="action-btn">📥 下载 MD</button>
-      <button @click="downloadPDF" class="action-btn">📄 下载 PDF</button>
+      <div class="pdf-export-group">
+        <button @click="downloadPDF" class="action-btn">📄 下载 PDF</button>
+        <select v-model="pdfStyleTheme" class="theme-selector">
+          <option value="github">GitHub 风格</option>
+          <option value="minimal">简约风格</option>
+        </select>
+      </div>
       <button @click="clearContent" class="clear-btn">🗑️ 清空</button>
     </div>
 
@@ -34,7 +40,8 @@ export default {
     return {
       vditor: null,
       successMessage: '',
-      error: ''
+      error: '',
+      pdfStyleTheme: 'github'
     };
   },
   mounted() {
@@ -48,6 +55,237 @@ export default {
   methods: {
     generateTimestamp() {
       return new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+    },
+
+    getPdfStyleSheet() {
+      const commonRules = `
+        * { 
+          box-sizing: border-box; 
+        }
+        
+        /* Prevent content from breaking badly across pages */
+        h1, h2, h3, h4, h5, h6 { 
+          page-break-after: avoid; 
+          break-after: avoid;
+        }
+        
+        pre, blockquote, table { 
+          page-break-inside: avoid; 
+          break-inside: avoid;
+        }
+        
+        img { 
+          page-break-inside: avoid;
+          break-inside: avoid; 
+          max-width: 100%;
+          height: auto;
+        }
+        
+        p, li {
+          orphans: 3;
+          widows: 3;
+        }
+      `;
+
+      const githubTheme = `
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+          font-size: 16px;
+          line-height: 1.6;
+          color: #24292f;
+          word-wrap: break-word;
+        }
+        
+        h1 { 
+          font-size: 2em; 
+          font-weight: 600;
+          padding-bottom: 0.3em;
+          border-bottom: 1px solid #d0d7de;
+          margin-top: 24px;
+          margin-bottom: 16px;
+        }
+        
+        h2 { 
+          font-size: 1.5em; 
+          font-weight: 600;
+          padding-bottom: 0.3em;
+          border-bottom: 1px solid #d0d7de;
+          margin-top: 24px;
+          margin-bottom: 16px;
+        }
+        
+        h3 { 
+          font-size: 1.25em; 
+          font-weight: 600;
+          margin-top: 24px;
+          margin-bottom: 16px;
+        }
+        
+        h4 { 
+          font-size: 1em; 
+          font-weight: 600;
+          margin-top: 24px;
+          margin-bottom: 16px;
+        }
+        
+        h5, h6 { 
+          font-size: 0.875em; 
+          font-weight: 600;
+          margin-top: 24px;
+          margin-bottom: 16px;
+        }
+        
+        p { 
+          margin-top: 0;
+          margin-bottom: 16px; 
+        }
+        
+        code { 
+          background-color: rgba(175,184,193,0.2);
+          border-radius: 6px;
+          padding: 0.2em 0.4em;
+          font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+          font-size: 85%;
+        }
+        
+        pre { 
+          background-color: #f6f8fa;
+          border-radius: 6px;
+          padding: 16px;
+          overflow: auto;
+          font-size: 85%;
+          line-height: 1.45;
+        }
+        
+        pre code {
+          background-color: transparent;
+          padding: 0;
+        }
+        
+        blockquote { 
+          border-left: 0.25em solid #d0d7de;
+          padding: 0 1em;
+          color: #57606a;
+          margin: 0 0 16px 0;
+        }
+        
+        ul, ol {
+          margin-top: 0;
+          margin-bottom: 16px;
+          padding-left: 2em;
+        }
+        
+        li + li {
+          margin-top: 0.25em;
+        }
+        
+        table { 
+          border-collapse: collapse;
+          border-spacing: 0;
+          width: 100%;
+          margin-top: 0;
+          margin-bottom: 16px;
+        }
+        
+        table th { 
+          font-weight: 600;
+          background-color: #f6f8fa;
+        }
+        
+        table th, table td { 
+          border: 1px solid #d0d7de;
+          padding: 6px 13px;
+        }
+        
+        table tr {
+          background-color: #ffffff;
+          border-top: 1px solid #d0d7de;
+        }
+        
+        table tr:nth-child(2n) {
+          background-color: #f6f8fa;
+        }
+        
+        a {
+          color: #0969da;
+          text-decoration: none;
+        }
+        
+        a:hover {
+          text-decoration: underline;
+        }
+        
+        hr {
+          height: 0.25em;
+          padding: 0;
+          margin: 24px 0;
+          background-color: #d0d7de;
+          border: 0;
+        }
+      `;
+
+      const minimalTheme = `
+        body { 
+          font-family: Georgia, 'Times New Roman', serif;
+          font-size: 14px;
+          line-height: 1.8;
+          color: #333;
+        }
+        
+        h1, h2, h3, h4, h5, h6 { 
+          font-weight: bold;
+          margin-top: 20px;
+          margin-bottom: 12px;
+          color: #000;
+        }
+        
+        h1 { font-size: 1.8em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.3em; }
+        h4, h5, h6 { font-size: 1.1em; }
+        
+        p { margin-bottom: 14px; }
+        
+        code { 
+          background-color: #f4f4f4;
+          padding: 2px 6px;
+          font-family: 'Courier New', monospace;
+          font-size: 90%;
+        }
+        
+        pre { 
+          background-color: #f8f8f8;
+          padding: 12px;
+          border-left: 3px solid #ccc;
+          overflow-x: auto;
+        }
+        
+        blockquote { 
+          border-left: 3px solid #999;
+          padding-left: 12px;
+          color: #666;
+          font-style: italic;
+          margin: 0 0 14px 0;
+        }
+        
+        table { 
+          border-collapse: collapse;
+          width: 100%;
+          margin-bottom: 14px;
+        }
+        
+        table th, table td { 
+          border: 1px solid #ccc;
+          padding: 8px;
+          text-align: left;
+        }
+        
+        table th {
+          background-color: #f0f0f0;
+        }
+      `;
+
+      return commonRules + (this.pdfStyleTheme === 'github' ? githubTheme : minimalTheme);
     },
 
     initVditor() {
@@ -181,40 +419,42 @@ export default {
           return;
         }
 
-        // 获取渲染后的 HTML
-        const html = this.vditor.getHTML();
+        const renderedHtml = this.vditor.getHTML();
         
-        // 创建一个临时的 div 来包含 HTML 内容
-        const element = document.createElement('div');
-        element.style.padding = '20px';
-        element.style.backgroundColor = 'white';
-        element.innerHTML = `
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-            h1, h2, h3, h4, h5, h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; }
-            h1 { font-size: 2em; border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
-            h2 { font-size: 1.5em; border-bottom: 1px solid #eaecef; padding-bottom: .3em; }
-            h3 { font-size: 1.25em; }
-            p { margin-bottom: 16px; }
-            code { background-color: rgba(27,31,35,.05); border-radius: 3px; padding: .2em .4em; font-family: monospace; }
-            pre { background-color: #f6f8fa; border-radius: 3px; padding: 16px; overflow: auto; }
-            blockquote { border-left: 4px solid #dfe2e5; padding-left: 1em; color: #6a737d; }
-            table { border-collapse: collapse; width: 100%; }
-            table th, table td { border: 1px solid #dfe2e5; padding: 6px 13px; }
-            img { max-width: 100%; }
-          </style>
-          ${html}
-        `;
+        const containerDiv = document.createElement('div');
+        containerDiv.style.padding = '30px';
+        containerDiv.style.backgroundColor = '#ffffff';
+        containerDiv.innerHTML = `<style>${this.getPdfStyleSheet()}</style>${renderedHtml}`;
 
-        const opt = {
-          margin: 10,
+        const pdfOptions = {
+          margin: { top: 15, right: 15, bottom: 15, left: 15 },
           filename: `markdown-${this.generateTimestamp()}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          image: { type: 'jpeg', quality: 0.95 },
+          html2canvas: { 
+            scale: 2,
+            useCORS: true,
+            letterRendering: true,
+            logging: false
+          },
+          jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'portrait',
+            compress: true
+          },
+          pagebreak: { 
+            // Multiple modes for maximum compatibility:
+            // - 'avoid-all': tries to avoid all breaks
+            // - 'css': respects CSS page-break rules  
+            // - 'legacy': fallback for older browsers
+            mode: ['avoid-all', 'css', 'legacy'],
+            before: '.page-break-before',
+            after: '.page-break-after',
+            avoid: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'table', 'pre', 'blockquote']
+          }
         };
 
-        await html2pdf().set(opt).from(element).save();
+        await html2pdf().set(pdfOptions).from(containerDiv).save();
 
         this.successMessage = 'PDF 文件下载成功！';
         setTimeout(() => {
@@ -283,6 +523,34 @@ h1 {
   justify-content: center;
   gap: 10px;
   margin-bottom: 20px;
+  align-items: center;
+}
+
+.pdf-export-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.theme-selector {
+  padding: 10px 12px;
+  border: 1px solid #3498db;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: white;
+  color: #2c3e50;
+  transition: border-color 0.3s;
+}
+
+.theme-selector:hover {
+  border-color: #2980b9;
+}
+
+.theme-selector:focus {
+  outline: none;
+  border-color: #2980b9;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .action-btn,
