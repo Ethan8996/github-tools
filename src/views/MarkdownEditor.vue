@@ -427,7 +427,7 @@ export default {
         containerDiv.innerHTML = `<style>${this.getPdfStyleSheet()}</style>${renderedHtml}`;
 
         const pdfOptions = {
-          margin: [15, 15, 15, 15],
+          margin: { top: 15, right: 15, bottom: 15, left: 15 },
           filename: `markdown-${this.generateTimestamp()}.pdf`,
           image: { type: 'jpeg', quality: 0.95 },
           html2canvas: { 
@@ -443,6 +443,10 @@ export default {
             compress: true
           },
           pagebreak: { 
+            // Multiple modes for maximum compatibility:
+            // - 'avoid-all': tries to avoid all breaks
+            // - 'css': respects CSS page-break rules  
+            // - 'legacy': fallback for older browsers
             mode: ['avoid-all', 'css', 'legacy'],
             before: '.page-break-before',
             after: '.page-break-after',
