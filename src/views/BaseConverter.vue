@@ -152,6 +152,61 @@
           </table>
           <button class="copy-all-btn" @click="copyModbusBatchTable">复制表格数据</button>
         </div>
+        
+        <div class="input-group" style="margin-top: 30px; border-top: 2px dashed #4a90e2; padding-top: 20px;">
+          <label style="color: #2c5aa0; font-size: 16px;">🔄 字节 → Modbus 寄存器 (反向转换)</label>
+          <p style="margin: 0 0 10px 0; color: #666; font-size: 13px;">
+            输入多个字节值，每2个字节组合成一个16位寄存器 (高位在前)
+          </p>
+          <textarea v-model="bytesToModbusInput" placeholder="输入字节值，用空格/逗号/换行分隔，例如:
+0x04 0xD2
+或: 4 210
+或: 0x12 0x34 0xAB 0xCD (将生成2个寄存器)" rows="4"></textarea>
+          <div style="display: flex; gap: 10px;">
+            <button @click="convertBytesToModbus" style="flex: 1;">转换 →</button>
+            <button @click="convertBytesToModbusSwap" style="flex: 1; background: #FF9800;" title="交换高低字节">转换 (交换字节)</button>
+          </div>
+        </div>
+        
+        <div class="modbus-bytes-result" v-if="bytesToModbusResults.length > 0">
+          <div class="bytes-summary">
+            <span>输入: {{ bytesToModbusInputBytes.length }} 个字节</span>
+            <span style="margin-left: 20px;">生成: {{ bytesToModbusResults.length }} 个寄存器</span>
+            <button class="copy-btn" style="margin-left: auto;" @click="copyBytesToModbusTable">复制表格</button>
+          </div>
+          <table class="modbus-table bytes-table">
+            <thead>
+              <tr>
+                <th>寄存器 #</th>
+                <th>原始字节 (Hex)</th>
+                <th>组合十六进制</th>
+                <th>十进制</th>
+                <th>二进制</th>
+                <th>有符号</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in bytesToModbusResults" :key="index">
+                <td class="register-num">{{ index + 1 }}</td>
+                <td class="bytes-cell">{{ item.originalBytes }}</td>
+                <td class="hex-cell">{{ item.hex }}</td>
+                <td>{{ item.decimal }}</td>
+                <td class="binary">{{ item.binary }}</td>
+                <td>{{ item.signed }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="quick-copy-section" v-if="bytesToModbusResults.length > 0">
+            <label>快速复制寄存器值 (十进制):</label>
+            <input :value="bytesToModbusResults.map(r => r.decimal).join(', ')" readonly ref="quickCopyDecimal"/>
+            <button class="copy-btn" @click="copyToClipboard(bytesToModbusResults.map(r => r.decimal).join(', '))">复制</button>
+          </div>
+          <div class="quick-copy-section" v-if="bytesToModbusResults.length > 0" style="margin-top: 8px;">
+            <label>快速复制寄存器值 (十六进制):</label>
+            <input :value="bytesToModbusResults.map(r => r.hex).join(', ')" readonly />
+            <button class="copy-btn" @click="copyToClipboard(bytesToModbusResults.map(r => r.hex).join(', '))">复制</button>
+          </div>
+        </div>
       </div>
       
       <!-- 批量转换 -->
@@ -218,6 +273,10 @@ export default {
       modbusResult: null,
       modbusBatchInput: '',
       modbusBatchResults: [],
+      // 字节转Modbus寄存器
+      bytesToModbusInput: '',
+      bytesToModbusResults: [],
+      bytesToModbusInputBytes: [],
       // 批量转换
       batchInput: '',
       // Toast提示
@@ -386,6 +445,106 @@ export default {
         item.binary,
         item.highByte,
         item.lowByte,
+        item.signed
+      ])
+      
+      const tableText = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n')
+      this.copyToClipboard(tableText)
+    },
+    
+    // 字节 → Modbus 寄存器转换
+    convertBytesToModbus(swapBytes = false) {
+      if (!this.bytesToModbusInput) {
+        this.showToast('请输入字节值')
+        return
+      }
+      
+      const bytes = this.parseBytesInput(this.bytesToModbusInput)
+      this.bytesToModbusInputBytes = bytes
+      
+      if (bytes.length === 0) {
+        this.showToast('没有有效的字节值')
+        return
+      }
+      
+      if (bytes.length % 2 !== 0) {
+        this.showToast(`警告: 有 ${bytes.length} 个字节 (奇数个)，最后一个字节将被忽略`)
+      }
+      
+      this.bytesToModbusResults = []
+      
+      // 每2个字节组成一个16位寄存器
+      for (let i = 0; i < bytes.length - 1; i += 2) {
+        let byte1 = bytes[i]
+        let byte2 = bytes[i + 1]
+        
+        // 如果不交换字节：高字节在前，低字节在后 (Modbus标准)
+        // 如果交换字节：低字节在前，高字节在后
+        let highByte, lowByte
+        if (swapBytes) {
+          highByte = byte2
+          lowByte = byte1
+        } else {
+          highByte = byte1
+          lowByte = byte2
+        }
+        
+        const registerValue = (highByte << 8) | lowByte
+        const formatted = this.formatModbusRegister(registerValue)
+        
+        this.bytesToModbusResults.push({
+          originalBytes: `0x${byte1.toString(16).toUpperCase().padStart(2, '0')} 0x${byte2.toString(16).toUpperCase().padStart(2, '0')}`,
+          ...formatted
+        })
+      }
+      
+      if (this.bytesToModbusResults.length > 0) {
+        this.showToast(`成功转换 ${this.bytesToModbusResults.length} 个寄存器`)
+      }
+    },
+    
+    // 字节 → Modbus 寄存器转换 (交换字节)
+    convertBytesToModbusSwap() {
+      this.convertBytesToModbus(true)
+    },
+    
+    // 解析字节输入
+    parseBytesInput(input) {
+      const parts = input.split(/[,\s]+/).filter(n => n.trim() !== '')
+      const bytes = []
+      
+      for (const part of parts) {
+        const trimmed = part.trim()
+        let value
+        
+        if (trimmed.toLowerCase().startsWith('0x')) {
+          value = parseInt(trimmed, 16)
+        } else if (trimmed.toLowerCase().startsWith('0b')) {
+          value = parseInt(trimmed.slice(2), 2)
+        } else {
+          value = parseInt(trimmed, 10)
+        }
+        
+        // 字节值必须是 0-255
+        if (!isNaN(value) && value >= 0 && value <= 255) {
+          bytes.push(value)
+        }
+      }
+      
+      return bytes
+    },
+    
+    // 复制字节转Modbus表格
+    copyBytesToModbusTable() {
+      if (this.bytesToModbusResults.length === 0) return
+      
+      const headers = ['寄存器#', '原始字节', '十六进制', '十进制', '二进制', '有符号']
+      const rows = this.bytesToModbusResults.map((item, index) => [
+        index + 1,
+        item.originalBytes,
+        item.hex,
+        item.decimal,
+        item.binary,
         item.signed
       ])
       
@@ -763,5 +922,83 @@ button:active {
 
 .copy-all-btn:hover {
   background: #1e3d6f;
+}
+
+/* 字节转Modbus寄存器样式 */
+.modbus-bytes-result {
+  margin-top: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+}
+
+.bytes-summary {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #fff;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #2c5aa0;
+}
+
+.modbus-table.bytes-table {
+  font-size: 13px;
+}
+
+.modbus-table .register-num {
+  background: #2c5aa0;
+  color: white;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modbus-table .bytes-cell {
+  color: #666;
+  font-style: italic;
+}
+
+.modbus-table .hex-cell {
+  color: #2c5aa0;
+  font-weight: bold;
+  background: #e3f2fd;
+}
+
+.quick-copy-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.quick-copy-section label {
+  font-weight: bold;
+  color: #555;
+  min-width: 150px;
+  font-size: 13px;
+}
+
+.quick-copy-section input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+  background: #f5f5f5;
+}
+
+.quick-copy-section .copy-btn {
+  margin-left: 0;
 }
 </style>
