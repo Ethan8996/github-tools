@@ -75,6 +75,85 @@
         </div>
       </div>
       
+      <!-- Modbus 寄存器转换 -->
+      <div class="converter-section modbus-section">
+        <h3>🔧 Modbus 寄存器转换 (2字节/16位)</h3>
+        <div class="input-group">
+          <label>输入寄存器值 (支持十进制、十六进制 0x、二进制 0b)</label>
+          <input v-model="modbusInput" placeholder="例如: 1234 或 0x04D2 或 0b100" />
+          <button @click="convertModbus">转换 →</button>
+        </div>
+        
+        <div class="modbus-result" v-if="modbusResult">
+          <div class="modbus-format">
+            <div class="format-item">
+              <span class="format-label">寄存器地址格式 (16进制):</span>
+              <span class="format-value">{{ modbusResult.hex }}</span>
+              <button class="copy-btn" @click="copyToClipboard(modbusResult.hex)">复制</button>
+            </div>
+            <div class="format-item">
+              <span class="format-label">寄存器值 (10进制):</span>
+              <span class="format-value">{{ modbusResult.decimal }}</span>
+              <button class="copy-btn" @click="copyToClipboard(modbusResult.decimal)">复制</button>
+            </div>
+            <div class="format-item">
+              <span class="format-label">寄存器值 (16位二进制):</span>
+              <span class="format-value">{{ modbusResult.binary }}</span>
+              <button class="copy-btn" @click="copyToClipboard(modbusResult.binary)">复制</button>
+            </div>
+            <div class="format-item bytes-split">
+              <span class="format-label">字节分解:</span>
+              <span class="format-value">
+                <span class="byte-box high-byte" title="高字节 (MSB)">高字节: {{ modbusResult.highByte }}</span>
+                <span class="byte-box low-byte" title="低字节 (LSB)">低字节: {{ modbusResult.lowByte }}</span>
+              </span>
+            </div>
+            <div class="format-item">
+              <span class="format-label">有符号值 (16位):</span>
+              <span class="format-value">{{ modbusResult.signed }}</span>
+              <button class="copy-btn" @click="copyToClipboard(modbusResult.signed.toString())">复制</button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="input-group" style="margin-top: 20px;">
+          <label>批量寄存器转换 (用空格、逗号或换行分隔)</label>
+          <textarea v-model="modbusBatchInput" placeholder="输入多个寄存器值，例如:
+1234
+0x04D2
+0b10011010010" rows="3"></textarea>
+          <button @click="convertModbusBatch">批量转换 →</button>
+        </div>
+        
+        <div class="modbus-batch-result" v-if="modbusBatchResults.length > 0">
+          <table class="modbus-table">
+            <thead>
+              <tr>
+                <th>输入</th>
+                <th>十六进制</th>
+                <th>十进制</th>
+                <th>二进制</th>
+                <th>高字节</th>
+                <th>低字节</th>
+                <th>有符号</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in modbusBatchResults" :key="index">
+                <td class="original">{{ item.original }}</td>
+                <td>{{ item.hex }}</td>
+                <td>{{ item.decimal }}</td>
+                <td class="binary">{{ item.binary }}</td>
+                <td>{{ item.highByte }}</td>
+                <td>{{ item.lowByte }}</td>
+                <td>{{ item.signed }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="copy-all-btn" @click="copyModbusBatchTable">复制表格数据</button>
+        </div>
+      </div>
+      
       <!-- 批量转换 -->
       <div class="converter-section">
         <h3>批量转换</h3>
@@ -134,6 +213,11 @@ export default {
       // 十进制转ASCII
       decimalToAsciiInput: '',
       asciiResult: '',
+      // Modbus寄存器转换
+      modbusInput: '',
+      modbusResult: null,
+      modbusBatchInput: '',
+      modbusBatchResults: [],
       // 批量转换
       batchInput: '',
       // Toast提示
@@ -209,6 +293,106 @@ export default {
       }
       this.asciiResult = result
     },
+    // Modbus寄存器转换
+    convertModbus() {
+      if (!this.modbusInput) {
+        this.showToast('请输入寄存器值')
+        return
+      }
+      
+      const value = this.parseModbusValue(this.modbusInput)
+      if (value === null) {
+        this.showToast('请输入有效的寄存器值 (0-65535)')
+        return
+      }
+      
+      this.modbusResult = this.formatModbusRegister(value)
+    },
+    
+    // 批量Modbus转换
+    convertModbusBatch() {
+      if (!this.modbusBatchInput) {
+        this.showToast('请输入要转换的寄存器值')
+        return
+      }
+      
+      const inputs = this.modbusBatchInput.split(/[,\s]+/).filter(n => n.trim() !== '')
+      this.modbusBatchResults = []
+      
+      for (const input of inputs) {
+        const value = this.parseModbusValue(input)
+        if (value !== null) {
+          this.modbusBatchResults.push({
+            original: input,
+            ...this.formatModbusRegister(value)
+          })
+        }
+      }
+      
+      if (this.modbusBatchResults.length === 0) {
+        this.showToast('没有有效的寄存器值')
+      }
+    },
+    
+    // 解析Modbus输入值
+    parseModbusValue(input) {
+      input = input.trim().toLowerCase()
+      if (!input) return null
+      
+      let value
+      if (input.startsWith('0x')) {
+        value = parseInt(input, 16)
+      } else if (input.startsWith('0b')) {
+        value = parseInt(input.slice(2), 2)
+      } else {
+        value = parseInt(input, 10)
+      }
+      
+      // Modbus寄存器是16位无符号整数 (0-65535)
+      if (isNaN(value) || value < 0 || value > 65535) {
+        return null
+      }
+      
+      return value
+    },
+    
+    // 格式化Modbus寄存器
+    formatModbusRegister(value) {
+      const highByte = (value >> 8) & 0xFF
+      const lowByte = value & 0xFF
+      
+      // 有符号16位转换
+      const signed = value > 32767 ? value - 65536 : value
+      
+      return {
+        hex: `0x${value.toString(16).toUpperCase().padStart(4, '0')}`,
+        decimal: value.toString(),
+        binary: value.toString(2).padStart(16, '0'),
+        highByte: `0x${highByte.toString(16).toUpperCase().padStart(2, '0')}`,
+        lowByte: `0x${lowByte.toString(16).toUpperCase().padStart(2, '0')}`,
+        signed: signed
+      }
+    },
+    
+    // 复制Modbus批量表格
+    copyModbusBatchTable() {
+      if (this.modbusBatchResults.length === 0) return
+      
+      const headers = ['输入', '十六进制', '十进制', '二进制', '高字节', '低字节', '有符号']
+      const rows = this.modbusBatchResults.map(item => [
+        item.original,
+        item.hex,
+        item.decimal,
+        item.binary,
+        item.highByte,
+        item.lowByte,
+        item.signed
+      ])
+      
+      const tableText = [headers.join('\t'), ...rows.map(r => r.join('\t'))].join('\n')
+      this.copyToClipboard(tableText)
+    },
+    
     // 批量转换函数
     toBinary(input) {
       const num = this.parseInput(input)
@@ -446,5 +630,138 @@ button:active {
   .converter-container {
     grid-template-columns: 1fr;
   }
+}
+
+/* Modbus 样式 */
+.modbus-section {
+  background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+  border: 2px solid #4a90e2;
+}
+
+.modbus-section h3 {
+  color: #2c5aa0;
+  border-bottom: 2px solid #2c5aa0;
+}
+
+.modbus-result {
+  background: #fff;
+  border: 1px solid #4a90e2;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.modbus-format {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.format-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.format-label {
+  font-weight: bold;
+  color: #2c5aa0;
+  min-width: 180px;
+}
+
+.format-value {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+  word-break: break-all;
+}
+
+.bytes-split .format-value {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.byte-box {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.byte-box.high-byte {
+  background: #ffebee;
+  border: 1px solid #ef5350;
+  color: #c62828;
+}
+
+.byte-box.low-byte {
+  background: #e3f2fd;
+  border: 1px solid #42a5f5;
+  color: #1565c0;
+}
+
+.modbus-batch-result {
+  margin-top: 15px;
+  overflow-x: auto;
+}
+
+.modbus-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.modbus-table th,
+.modbus-table td {
+  padding: 10px 12px;
+  text-align: center;
+  border: 1px solid #e0e0e0;
+}
+
+.modbus-table th {
+  background: #2c5aa0;
+  color: white;
+  font-weight: bold;
+}
+
+.modbus-table td {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.modbus-table tr:nth-child(even) {
+  background: #f5f9ff;
+}
+
+.modbus-table tr:hover {
+  background: #e8f0fe;
+}
+
+.modbus-table .original {
+  color: #666;
+  font-style: italic;
+}
+
+.modbus-table .binary {
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.copy-all-btn {
+  margin-top: 10px;
+  background: #2c5aa0;
+}
+
+.copy-all-btn:hover {
+  background: #1e3d6f;
 }
 </style>
