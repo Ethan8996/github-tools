@@ -163,7 +163,7 @@
 或: 4 210
 或: 0x12 0x34 0xAB 0xCD (将生成2个寄存器)" rows="4"></textarea>
           <div style="display: flex; gap: 10px;">
-            <button @click="convertBytesToModbus" style="flex: 1;">转换 →</button>
+            <button @click="convertBytesToModbus(false)" style="flex: 1;">转换 →</button>
             <button @click="convertBytesToModbusSwap" style="flex: 1; background: #FF9800;" title="交换高低字节">转换 (交换字节)</button>
           </div>
         </div>
@@ -473,6 +473,8 @@ export default {
       
       this.bytesToModbusResults = []
       
+      const useSwapOrder = swapBytes === true
+
       // 每2个字节组成一个16位寄存器
       for (let i = 0; i < bytes.length - 1; i += 2) {
         let byte1 = bytes[i]
@@ -481,7 +483,7 @@ export default {
         // 如果不交换字节：高字节在前，低字节在后 (Modbus标准)
         // 如果交换字节：低字节在前，高字节在后
         let highByte, lowByte
-        if (swapBytes) {
+        if (useSwapOrder) {
           highByte = byte2
           lowByte = byte1
         } else {
