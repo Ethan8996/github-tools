@@ -41,6 +41,11 @@ const routes = [
     path: '/markdown-editor',
     name: 'MarkdownEditor',
     component: () => import('../views/MarkdownEditor.vue')
+  },
+  {
+    path: '/base-converter',
+    name: 'BaseConverter',
+    component: () => import('../views/BaseConverter.vue')
   }
 ]
 

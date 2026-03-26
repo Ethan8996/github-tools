@@ -3,8 +3,8 @@
     <h1>我的日常工作工具集</h1>
     <div class="tools-grid">
       <router-link to="/SqlTools" class="tool-card">
-        <h2>工具1</h2>
-        <p>工具1的简短描述</p>
+        <h2>SQL 工具</h2>
+        <p>SQL 格式化、压缩、大小写转换等功能</p>
       </router-link>
       <router-link to="/tool2" class="tool-card">
         <h2>字符串列表比较</h2>
@@ -29,6 +29,10 @@
       <router-link to="/markdown-editor" class="tool-card">
         <h2>Markdown 在线编辑器</h2>
         <p>强大的 Markdown 编辑器，支持实时预览和导出 PDF</p>
+      </router-link>
+      <router-link to="/base-converter" class="tool-card">
+        <h2>进制转换工具</h2>
+        <p>十进制、二进制、十六进制互转，ASCII 与数字互转</p>
       </router-link>
       <!-- 可以继续添加更多工具卡片 -->
     </div>
