@@ -795,6 +795,13 @@ button:active {
 .modbus-section {
   background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
   border: 2px solid #4a90e2;
+  grid-column: span 1;
+}
+
+@media (min-width: 900px) {
+  .modbus-section {
+    grid-column: span 2;
+  }
 }
 
 .modbus-section h3 {
@@ -872,6 +879,7 @@ button:active {
 
 .modbus-table {
   width: 100%;
+  min-width: 600px; /* 最小宽度，防止列挤压，超出部分由父容器滚动显示 */
   border-collapse: collapse;
   background: #fff;
   border-radius: 4px;
@@ -895,6 +903,21 @@ button:active {
 .modbus-table td {
   font-family: 'Courier New', monospace;
   font-size: 13px;
+  white-space: nowrap;
+}
+
+.modbus-table .original {
+  color: #666;
+  font-style: italic;
+  white-space: normal;
+  word-break: break-all;
+  min-width: 120px;
+}
+
+.modbus-table .bytes-cell {
+  white-space: normal;
+  word-break: break-all;
+  min-width: 120px;
 }
 
 .modbus-table tr:nth-child(even) {
@@ -903,11 +926,6 @@ button:active {
 
 .modbus-table tr:hover {
   background: #e8f0fe;
-}
-
-.modbus-table .original {
-  color: #666;
-  font-style: italic;
 }
 
 .modbus-table .binary {
@@ -931,6 +949,7 @@ button:active {
   border-radius: 8px;
   padding: 15px;
   border: 1px solid #e0e0e0;
+  overflow-x: auto; /* 添加溢出滚动 */
 }
 
 .bytes-summary {
@@ -979,6 +998,7 @@ button:active {
   padding: 10px;
   background: #fff;
   border-radius: 4px;
+  flex-wrap: wrap; /* 允许换行 */
 }
 
 .quick-copy-section label {
