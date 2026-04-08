@@ -270,6 +270,59 @@ test('Bookmarks view saves to GitHub, persists remembered config, and clears dir
   assert.deepEqual(clearedConfigs, []);
 });
 
+test('Bookmarks view still reports success when local config persistence fails after GitHub save', async () => {
+  const originalWindow = global.window;
+  global.window = {
+    localStorage: {
+      getItem() {
+        return null;
+      },
+      setItem() {
+        throw new Error('storage blocked');
+      },
+      removeItem() {
+        throw new Error('storage blocked');
+      },
+    },
+  };
+
+  try {
+    const component = loadVueComponent(componentPath, {
+      '../utils/bookmarks': bookmarksUtils,
+      '../utils/githubContents': {
+        async fetchRepositoryFile() {
+          return { sha: 'sha-123' };
+        },
+        async updateRepositoryFile() {
+          return { commitSha: 'commit-456' };
+        },
+      },
+      fetch: async function fetchStub() {},
+    });
+    const vmState = mountOptionsComponent(component);
+
+    vmState.form.title = 'Example';
+    vmState.form.url = 'https://example.com';
+    vmState.addBookmark();
+    vmState.github.repository = 'owner/repo';
+    vmState.github.token = 'ghp_token';
+    vmState.github.branch = 'main';
+    vmState.rememberConfig = true;
+
+    await vmState.saveToGithub();
+
+    assert.match(vmState.saveMessage, /GitHub/);
+    assert.equal(vmState.hasLocalChanges, false);
+    assert.equal(vmState.saveError, '');
+  } finally {
+    if (typeof originalWindow === 'undefined') {
+      delete global.window;
+    } else {
+      global.window = originalWindow;
+    }
+  }
+});
+
 test('Bookmarks view surfaces GitHub save helper failures and keeps dirty state', async () => {
   const component = loadVueComponent(componentPath, {
     '../utils/bookmarks': bookmarksUtils,

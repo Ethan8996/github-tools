@@ -67,14 +67,18 @@ function saveGithubConfig(storage, config) {
     return;
   }
 
-  resolvedStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      token: typeof config?.token === 'string' ? config.token : '',
-      repository: typeof config?.repository === 'string' ? config.repository : '',
-      branch: typeof config?.branch === 'string' ? config.branch : '',
-    })
-  );
+  try {
+    resolvedStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        token: typeof config?.token === 'string' ? config.token : '',
+        repository: typeof config?.repository === 'string' ? config.repository : '',
+        branch: typeof config?.branch === 'string' ? config.branch : '',
+      })
+    );
+  } catch {
+    return;
+  }
 }
 
 function clearGithubConfig(storage) {
@@ -84,7 +88,11 @@ function clearGithubConfig(storage) {
     return;
   }
 
-  resolvedStorage.removeItem(STORAGE_KEY);
+  try {
+    resolvedStorage.removeItem(STORAGE_KEY);
+  } catch {
+    return;
+  }
 }
 
 module.exports = {

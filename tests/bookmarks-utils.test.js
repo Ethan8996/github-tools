@@ -208,6 +208,27 @@ test('clearGithubConfig removes persisted config', () => {
   assert.deepEqual(storage.dump(), {});
 });
 
+test('saveGithubConfig and clearGithubConfig ignore storage write failures', () => {
+  const storage = {
+    getItem() {
+      return null;
+    },
+    setItem() {
+      throw new Error('quota exceeded');
+    },
+    removeItem() {
+      throw new Error('blocked');
+    },
+  };
+
+  assert.doesNotThrow(() => saveGithubConfig(storage, {
+    token: 'ghp_test',
+    repository: 'owner/repo',
+    branch: 'main',
+  }));
+  assert.doesNotThrow(() => clearGithubConfig(storage));
+});
+
 test('loadGithubConfig falls back when window.localStorage getter throws', () => {
   const originalWindow = global.window;
   const throwingWindow = {};
