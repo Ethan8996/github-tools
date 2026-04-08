@@ -110,6 +110,13 @@ test('imported bookmarks data contains normalized devTool entries', () => {
     assert.notEqual(bookmark.id, '');
     assert.notEqual(bookmark.title, '');
     assert.match(bookmark.url, /^http/);
+    assert.equal(
+      bookmark.id,
+      normalizeBookmark({
+        title: bookmark.title,
+        url: bookmark.url,
+      }).id
+    );
   }
 });
 
