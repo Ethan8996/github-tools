@@ -46,6 +46,11 @@ const routes = [
     path: '/base-converter',
     name: 'BaseConverter',
     component: () => import('../views/BaseConverter.vue')
+  },
+  {
+    path: '/bookmarks',
+    name: 'Bookmarks',
+    component: () => import('../views/Bookmarks.vue')
   }
 ]
 

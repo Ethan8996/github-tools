@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const {
   createBookmarkId,
@@ -45,6 +47,12 @@ test('createBookmarkId creates a stable id from title and url', () => {
 
   assert.equal(first, second);
   assert.match(first, /^apifox-https-app-apifox-com-main-teams-489258-tab-project-[a-f0-9]{10}$/);
+});
+
+test('bookmarks utility stays browser-safe and does not depend on node:crypto', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../src/utils/bookmarks.js'), 'utf8');
+
+  assert.doesNotMatch(source, /node:crypto/);
 });
 
 test('createBookmarkId distinguishes punctuation-heavy urls', () => {
