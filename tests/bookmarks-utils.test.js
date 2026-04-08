@@ -8,6 +8,35 @@ const {
   normalizeBookmark,
   serializeBookmarks,
 } = require('../src/utils/bookmarks');
+const {
+  STORAGE_KEY,
+  loadGithubConfig,
+  saveGithubConfig,
+  clearGithubConfig,
+} = require('../src/utils/bookmarkStorage');
+
+function createMemoryStorage(initialValue) {
+  const store = new Map();
+
+  if (typeof initialValue === 'string') {
+    store.set(STORAGE_KEY, initialValue);
+  }
+
+  return {
+    getItem(key) {
+      return store.has(key) ? store.get(key) : null;
+    },
+    setItem(key, value) {
+      store.set(key, String(value));
+    },
+    removeItem(key) {
+      store.delete(key);
+    },
+    dump() {
+      return Object.fromEntries(store.entries());
+    },
+  };
+}
 
 test('createBookmarkId creates a stable id from title and url', () => {
   const first = createBookmarkId('Apifox', 'https://app.apifox.com/main/teams/489258?tab=project');
@@ -68,4 +97,47 @@ test('serializeBookmarks returns pretty json with trailing newline', () => {
     ]),
     '[\n  {\n    "id": "apifox",\n    "title": "Apifox",\n    "url": "https://app.apifox.com"\n  }\n]\n'
   );
+});
+
+test('loadGithubConfig returns defaults when storage is empty', () => {
+  const storage = createMemoryStorage();
+
+  assert.deepEqual(loadGithubConfig(storage), {
+    token: '',
+    repository: '',
+    branch: '',
+  });
+});
+
+test('saveGithubConfig persists token repository and branch under one storage key', () => {
+  const storage = createMemoryStorage();
+
+  saveGithubConfig(storage, {
+    token: 'ghp_test',
+    repository: 'owner/repo',
+    branch: 'main',
+    ignored: 'value',
+  });
+
+  assert.deepEqual(storage.dump(), {
+    [STORAGE_KEY]: JSON.stringify({
+      token: 'ghp_test',
+      repository: 'owner/repo',
+      branch: 'main',
+    }),
+  });
+});
+
+test('clearGithubConfig removes persisted config', () => {
+  const storage = createMemoryStorage(
+    JSON.stringify({
+      token: 'ghp_test',
+      repository: 'owner/repo',
+      branch: 'main',
+    })
+  );
+
+  clearGithubConfig(storage);
+
+  assert.deepEqual(storage.dump(), {});
 });
