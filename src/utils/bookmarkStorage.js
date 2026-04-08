@@ -13,8 +13,12 @@ function getStorage(storage) {
     return storage;
   }
 
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return window.localStorage;
+  if (typeof window !== 'undefined') {
+    try {
+      return window.localStorage || null;
+    } catch {
+      return null;
+    }
   }
 
   return null;

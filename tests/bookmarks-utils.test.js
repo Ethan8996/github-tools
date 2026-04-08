@@ -109,6 +109,16 @@ test('loadGithubConfig returns defaults when storage is empty', () => {
   });
 });
 
+test('loadGithubConfig returns defaults when stored json is invalid', () => {
+  const storage = createMemoryStorage('{not valid json');
+
+  assert.deepEqual(loadGithubConfig(storage), {
+    token: '',
+    repository: '',
+    branch: '',
+  });
+});
+
 test('saveGithubConfig persists token repository and branch under one storage key', () => {
   const storage = createMemoryStorage();
 
@@ -140,4 +150,34 @@ test('clearGithubConfig removes persisted config', () => {
   clearGithubConfig(storage);
 
   assert.deepEqual(storage.dump(), {});
+});
+
+test('loadGithubConfig falls back when window.localStorage getter throws', () => {
+  const originalWindow = global.window;
+  const throwingWindow = {};
+
+  Object.defineProperty(throwingWindow, 'localStorage', {
+    configurable: true,
+    get() {
+      throw new Error('blocked');
+    },
+  });
+
+  global.window = throwingWindow;
+
+  try {
+    assert.deepEqual(loadGithubConfig(), {
+      token: '',
+      repository: '',
+      branch: '',
+    });
+    assert.doesNotThrow(() => saveGithubConfig());
+    assert.doesNotThrow(() => clearGithubConfig());
+  } finally {
+    if (typeof originalWindow === 'undefined') {
+      delete global.window;
+    } else {
+      global.window = originalWindow;
+    }
+  }
 });
