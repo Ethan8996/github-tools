@@ -1,3 +1,5 @@
+const crypto = require('node:crypto');
+
 function slugify(value) {
   let slug = '';
 
@@ -25,8 +27,31 @@ function slugify(value) {
   return slug.replace(/^-+|-+$/g, '');
 }
 
+function normalizeBookmarkTitle(title) {
+  return String(title || '').trim().toLowerCase();
+}
+
+function normalizeBookmarkUrl(url) {
+  const trimmedUrl = String(url || '').trim();
+
+  try {
+    return new URL(trimmedUrl).toString();
+  } catch {
+    return trimmedUrl;
+  }
+}
+
 function createBookmarkId(title, url) {
-  return `${slugify(title)}-${slugify(url)}`;
+  const normalizedTitle = normalizeBookmarkTitle(title);
+  const normalizedUrl = normalizeBookmarkUrl(url);
+  const prefix = [slugify(normalizedTitle), slugify(normalizedUrl)].filter(Boolean).join('-');
+  const hash = crypto
+    .createHash('sha256')
+    .update(`${normalizedTitle}\n${normalizedUrl}`)
+    .digest('hex')
+    .slice(0, 10);
+
+  return prefix ? `${prefix}-${hash}` : hash;
 }
 
 function isValidBookmarkUrl(url) {

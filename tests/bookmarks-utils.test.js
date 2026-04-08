@@ -10,19 +10,20 @@ const {
 } = require('../src/utils/bookmarks');
 
 test('createBookmarkId creates a stable id from title and url', () => {
-  assert.equal(
-    createBookmarkId('Apifox', 'https://app.apifox.com/main/teams/489258?tab=project'),
-    'apifox-https-app-apifox-com-main-teams-489258-tab-project'
-  );
+  const first = createBookmarkId('Apifox', 'https://app.apifox.com/main/teams/489258?tab=project');
+  const second = createBookmarkId('Apifox', 'https://app.apifox.com/main/teams/489258?tab=project');
+
+  assert.equal(first, second);
+  assert.match(first, /^apifox-https-app-apifox-com-main-teams-489258-tab-project-[a-f0-9]{10}$/);
 });
 
-test('createBookmarkId distinguishes hyphen and underscore separators', () => {
-  const hyphenId = createBookmarkId('API Docs', 'https://example.com/release-notes');
-  const underscoreId = createBookmarkId('API Docs', 'https://example.com/release_notes');
+test('createBookmarkId distinguishes punctuation-heavy urls', () => {
+  const queryId = createBookmarkId('API Docs', 'https://example.com/api/v1/users?id=42');
+  const fragmentId = createBookmarkId('API Docs', 'https://example.com/api/v1/users#id=42');
 
-  assert.notEqual(hyphenId, underscoreId);
-  assert.equal(hyphenId, 'api-docs-https-example-com-release--notes');
-  assert.equal(underscoreId, 'api-docs-https-example-com-release__notes');
+  assert.notEqual(queryId, fragmentId);
+  assert.match(queryId, /^api-docs-https-example-com-api-v1-users-id-42-[a-f0-9]{10}$/);
+  assert.match(fragmentId, /^api-docs-https-example-com-api-v1-users-id-42-[a-f0-9]{10}$/);
 });
 
 test('isValidBookmarkUrl accepts only http and https urls', () => {
@@ -46,17 +47,14 @@ test('filterBookmarks matches title and url case-insensitively', () => {
 });
 
 test('normalizeBookmark trims title and url and generates id', () => {
-  assert.deepEqual(
-    normalizeBookmark({
-      title: '  Mermaid Live Editor  ',
-      url: '  https://mermaid.live/edit  ',
-    }),
-    {
-      id: 'mermaid-live-editor-https-mermaid-live-edit',
-      title: 'Mermaid Live Editor',
-      url: 'https://mermaid.live/edit',
-    }
-  );
+  const bookmark = normalizeBookmark({
+    title: '  Mermaid Live Editor  ',
+    url: '  https://mermaid.live/edit  ',
+  });
+
+  assert.equal(bookmark.title, 'Mermaid Live Editor');
+  assert.equal(bookmark.url, 'https://mermaid.live/edit');
+  assert.match(bookmark.id, /^mermaid-live-editor-https-mermaid-live-edit-[a-f0-9]{10}$/);
 });
 
 test('serializeBookmarks returns pretty json with trailing newline', () => {
