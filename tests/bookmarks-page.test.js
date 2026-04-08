@@ -163,6 +163,43 @@ test('Bookmarks view validates add form and opens bookmarks in a new tab', () =>
   assert.deepEqual(opens, [['https://example.com', '_blank', 'noopener']]);
 });
 
+test('Bookmarks view rejects adding the same normalized bookmark twice', () => {
+  const component = loadVueComponent(componentPath, {
+    '../utils/bookmarkStorage': {
+      loadGithubConfig() {
+        return {
+          token: '',
+          repository: '',
+          branch: '',
+        };
+      },
+      saveGithubConfig() {},
+      clearGithubConfig() {},
+    },
+    '../utils/bookmarks': bookmarksUtils,
+    '../utils/githubContents': {
+      async fetchRepositoryFile() {},
+      async updateRepositoryFile() {},
+    },
+  });
+  const vmState = mountOptionsComponent(component);
+  const initialCount = vmState.bookmarks.length;
+
+  vmState.form.title = ' Example ';
+  vmState.form.url = 'https://example.com/docs';
+  vmState.addBookmark();
+
+  assert.equal(vmState.bookmarks.length, initialCount + 1);
+  assert.equal(vmState.formError, '');
+
+  vmState.form.title = 'example';
+  vmState.form.url = ' https://example.com/docs ';
+  vmState.addBookmark();
+
+  assert.equal(vmState.bookmarks.length, initialCount + 1);
+  assert.match(vmState.formError, /重复|已存在/);
+});
+
 test('Bookmarks view saves to GitHub, persists remembered config, and clears dirty state on success', async () => {
   const calls = [];
   const savedConfigs = [];

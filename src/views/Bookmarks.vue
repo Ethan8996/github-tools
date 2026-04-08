@@ -218,7 +218,14 @@ export default {
         return
       }
 
-      this.bookmarks.unshift(normalizeBookmark({ title, url }))
+      const nextBookmark = normalizeBookmark({ title, url })
+
+      if (this.bookmarks.some((bookmark) => bookmark.id === nextBookmark.id)) {
+        this.formError = '该网址已存在，请勿重复添加'
+        return
+      }
+
+      this.bookmarks.unshift(nextBookmark)
       this.form.title = ''
       this.form.url = ''
       this.formError = ''
