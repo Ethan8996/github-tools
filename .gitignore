@@ -3,6 +3,7 @@ node_modules
 /dist
 .idea
 .vscode
+.worktrees/
 
 
 # local env files
