@@ -16,6 +16,15 @@ test('createBookmarkId creates a stable id from title and url', () => {
   );
 });
 
+test('createBookmarkId distinguishes hyphen and underscore separators', () => {
+  const hyphenId = createBookmarkId('API Docs', 'https://example.com/release-notes');
+  const underscoreId = createBookmarkId('API Docs', 'https://example.com/release_notes');
+
+  assert.notEqual(hyphenId, underscoreId);
+  assert.equal(hyphenId, 'api-docs-https-example-com-release--notes');
+  assert.equal(underscoreId, 'api-docs-https-example-com-release__notes');
+});
+
 test('isValidBookmarkUrl accepts only http and https urls', () => {
   assert.equal(isValidBookmarkUrl('http://example.com'), true);
   assert.equal(isValidBookmarkUrl('https://example.com/path'), true);

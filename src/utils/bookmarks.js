@@ -1,9 +1,28 @@
 function slugify(value) {
-  return String(value)
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  let slug = '';
+
+  for (const char of String(value).trim().toLowerCase()) {
+    if ((char >= 'a' && char <= 'z') || (char >= '0' && char <= '9')) {
+      slug += char;
+      continue;
+    }
+
+    if (char === '-') {
+      slug += '--';
+      continue;
+    }
+
+    if (char === '_') {
+      slug += '__';
+      continue;
+    }
+
+    if (!slug.endsWith('-')) {
+      slug += '-';
+    }
+  }
+
+  return slug.replace(/^-+|-+$/g, '');
 }
 
 function createBookmarkId(title, url) {
