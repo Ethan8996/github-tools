@@ -8,6 +8,7 @@ const {
   normalizeBookmark,
   serializeBookmarks,
 } = require('../src/utils/bookmarks');
+const importedBookmarks = require('../src/data/bookmarks.json');
 const {
   STORAGE_KEY,
   loadGithubConfig,
@@ -97,6 +98,19 @@ test('serializeBookmarks returns pretty json with trailing newline', () => {
     ]),
     '[\n  {\n    "id": "apifox",\n    "title": "Apifox",\n    "url": "https://app.apifox.com"\n  }\n]\n'
   );
+});
+
+test('imported bookmarks data contains normalized devTool entries', () => {
+  assert.equal(importedBookmarks.length, 47);
+
+  for (const bookmark of importedBookmarks) {
+    assert.equal(typeof bookmark.id, 'string');
+    assert.equal(typeof bookmark.title, 'string');
+    assert.equal(typeof bookmark.url, 'string');
+    assert.notEqual(bookmark.id, '');
+    assert.notEqual(bookmark.title, '');
+    assert.match(bookmark.url, /^http/);
+  }
 });
 
 test('loadGithubConfig returns defaults when storage is empty', () => {
