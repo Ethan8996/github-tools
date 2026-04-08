@@ -64,6 +64,13 @@ test('createBookmarkId distinguishes punctuation-heavy urls', () => {
   assert.match(fragmentId, /^api-docs-https-example-com-api-v1-users-id-42-[a-f0-9]{10}$/);
 });
 
+test('createBookmarkId stays stable for unicode-heavy bookmark inputs', () => {
+  assert.equal(
+    createBookmarkId('中文 🚀 API', 'https://example.com/路径?标签=火箭🚀'),
+    'api-https-example-com-e8-b7-af-e5-be-84-e6-a0-87-e7-ad-be-e7-81-ab-e7-ae-ad-f0-9f-9a-80-3f56bb794b'
+  );
+});
+
 test('isValidBookmarkUrl accepts only http and https urls', () => {
   assert.equal(isValidBookmarkUrl('http://example.com'), true);
   assert.equal(isValidBookmarkUrl('https://example.com/path'), true);
@@ -93,6 +100,26 @@ test('normalizeBookmark trims title and url and generates id', () => {
   assert.equal(bookmark.title, 'Mermaid Live Editor');
   assert.equal(bookmark.url, 'https://mermaid.live/edit');
   assert.match(bookmark.id, /^mermaid-live-editor-https-mermaid-live-edit-[a-f0-9]{10}$/);
+});
+
+test('normalizeBookmark throws when title is blank after trimming', () => {
+  assert.throws(
+    () => normalizeBookmark({
+      title: '   ',
+      url: 'https://example.com',
+    }),
+    /标题不能为空/
+  );
+});
+
+test('normalizeBookmark throws when url is not a valid http or https url', () => {
+  assert.throws(
+    () => normalizeBookmark({
+      title: 'Example',
+      url: 'ftp://example.com',
+    }),
+    /URL 必须是有效的 http\/https 地址/
+  );
 });
 
 test('serializeBookmarks returns pretty json with trailing newline', () => {

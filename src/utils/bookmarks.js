@@ -231,8 +231,16 @@ function filterBookmarks(bookmarks, query) {
 }
 
 function normalizeBookmark(bookmark) {
-  const title = String(bookmark.title || '').trim();
-  const url = String(bookmark.url || '').trim();
+  const title = String(bookmark && bookmark.title || '').trim();
+  const url = String(bookmark && bookmark.url || '').trim();
+
+  if (!title) {
+    throw new Error('标题不能为空');
+  }
+
+  if (!isValidBookmarkUrl(url)) {
+    throw new Error('URL 必须是有效的 http/https 地址');
+  }
 
   return {
     id: createBookmarkId(title, url),

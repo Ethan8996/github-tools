@@ -143,7 +143,7 @@
 
 <script>
 import initialBookmarks from '../data/bookmarks.json'
-import { filterBookmarks, isValidBookmarkUrl, normalizeBookmark, serializeBookmarks } from '../utils/bookmarks'
+import { filterBookmarks, normalizeBookmark, serializeBookmarks } from '../utils/bookmarks'
 import { loadGithubConfig, saveGithubConfig, clearGithubConfig } from '../utils/bookmarkStorage'
 import { fetchRepositoryFile, updateRepositoryFile } from '../utils/githubContents'
 
@@ -205,20 +205,14 @@ export default {
       this.saveError = ''
     },
     addBookmark() {
-      const title = String(this.form.title || '').trim()
-      const url = String(this.form.url || '').trim()
+      let nextBookmark
 
-      if (!title) {
-        this.formError = '标题不能为空'
+      try {
+        nextBookmark = normalizeBookmark(this.form)
+      } catch (error) {
+        this.formError = error && error.message ? error.message : '新增网址失败，请稍后重试'
         return
       }
-
-      if (!isValidBookmarkUrl(url)) {
-        this.formError = 'URL 必须是有效的 http/https 地址'
-        return
-      }
-
-      const nextBookmark = normalizeBookmark({ title, url })
 
       if (this.bookmarks.some((bookmark) => bookmark.id === nextBookmark.id)) {
         this.formError = '该网址已存在，请勿重复添加'

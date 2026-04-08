@@ -270,6 +270,46 @@ test('Bookmarks view saves to GitHub, persists remembered config, and clears dir
   assert.deepEqual(clearedConfigs, []);
 });
 
+test('Bookmarks view surfaces GitHub save helper failures and keeps dirty state', async () => {
+  const component = loadVueComponent(componentPath, {
+    '../utils/bookmarks': bookmarksUtils,
+    '../utils/bookmarkStorage': {
+      loadGithubConfig() {
+        return {
+          token: '',
+          repository: '',
+          branch: '',
+        };
+      },
+      saveGithubConfig() {},
+      clearGithubConfig() {},
+    },
+    '../utils/githubContents': {
+      async fetchRepositoryFile() {
+        return { sha: 'sha-123' };
+      },
+      async updateRepositoryFile() {
+        throw new Error('GitHub helper save failed');
+      },
+    },
+    fetch: async function fetchStub() {},
+  });
+  const vmState = mountOptionsComponent(component);
+
+  vmState.form.title = 'Example';
+  vmState.form.url = 'https://example.com';
+  vmState.addBookmark();
+  vmState.github.repository = 'owner/repo';
+  vmState.github.token = 'ghp_token';
+  vmState.saveMessage = 'should clear';
+
+  await vmState.saveToGithub();
+
+  assert.equal(vmState.saveError, 'GitHub helper save failed');
+  assert.equal(vmState.hasLocalChanges, true);
+  assert.equal(vmState.saveMessage, '');
+});
+
 test('Bookmarks view validates GitHub config, allows blank branch, and clears stored config when not remembered', async () => {
   const clearedConfigs = [];
   const component = loadVueComponent(componentPath, {
@@ -328,6 +368,49 @@ test('Bookmarks view validates GitHub config, allows blank branch, and clears st
   assert.equal(vmState.github.branch, '');
   assert.equal(vmState.github.token, '');
   assert.equal(vmState.rememberConfig, false);
+});
+
+test('Bookmarks view forwards a blank branch string to GitHub helpers when the branch input is whitespace', async () => {
+  const calls = [];
+  const component = loadVueComponent(componentPath, {
+    '../utils/bookmarks': bookmarksUtils,
+    '../utils/bookmarkStorage': {
+      loadGithubConfig() {
+        return {
+          token: '',
+          repository: '',
+          branch: '',
+        };
+      },
+      saveGithubConfig() {},
+      clearGithubConfig() {},
+    },
+    '../utils/githubContents': {
+      async fetchRepositoryFile(_fetchImpl, options) {
+        calls.push(['fetch', options]);
+        return { sha: 'sha-blank-branch' };
+      },
+      async updateRepositoryFile(_fetchImpl, options) {
+        calls.push(['update', options]);
+        return { commitSha: 'commit-blank-branch' };
+      },
+    },
+    fetch: async function fetchStub() {},
+  });
+  const vmState = mountOptionsComponent(component);
+
+  vmState.form.title = 'Example';
+  vmState.form.url = 'https://example.com';
+  vmState.addBookmark();
+  vmState.github.repository = ' owner/repo ';
+  vmState.github.token = ' ghp_token ';
+  vmState.github.branch = '   ';
+
+  await vmState.saveToGithub();
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0][1].branch, '');
+  assert.equal(calls[1][1].branch, '');
 });
 
 test('router includes the bookmarks page and home view links to it', () => {
