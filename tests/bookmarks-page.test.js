@@ -163,6 +163,78 @@ test('Bookmarks view validates add form and opens bookmarks in a new tab', () =>
   assert.deepEqual(opens, [['https://example.com', '_blank', 'noopener']]);
 });
 
+test('Bookmarks view can quickly jump to the configured GitHub bookmarks file', () => {
+  const opens = [];
+  const component = loadVueComponent(componentPath, {
+    '../utils/bookmarkStorage': {
+      loadGithubConfig() {
+        return {
+          token: '',
+          repository: '',
+          branch: '',
+        };
+      },
+      saveGithubConfig() {},
+      clearGithubConfig() {},
+    },
+    '../utils/bookmarks': bookmarksUtils,
+    '../utils/githubContents': {
+      async fetchRepositoryFile() {},
+      async updateRepositoryFile() {},
+    },
+    window: {
+      open(...args) {
+        opens.push(args);
+      },
+    },
+  });
+  const vmState = mountOptionsComponent(component);
+
+  vmState.github.repository = ' owner/repo ';
+  vmState.github.branch = ' feature/bookmarks ';
+  vmState.openGithubTarget();
+
+  assert.equal(vmState.saveError, '');
+  assert.deepEqual(opens, [[
+    'https://github.com/owner/repo/blob/feature/bookmarks/src/data/bookmarks.json',
+    '_blank',
+    'noopener',
+  ]]);
+});
+
+test('Bookmarks view blocks GitHub quick jump when the repository is blank', () => {
+  const opens = [];
+  const component = loadVueComponent(componentPath, {
+    '../utils/bookmarkStorage': {
+      loadGithubConfig() {
+        return {
+          token: '',
+          repository: '',
+          branch: '',
+        };
+      },
+      saveGithubConfig() {},
+      clearGithubConfig() {},
+    },
+    '../utils/bookmarks': bookmarksUtils,
+    '../utils/githubContents': {
+      async fetchRepositoryFile() {},
+      async updateRepositoryFile() {},
+    },
+    window: {
+      open(...args) {
+        opens.push(args);
+      },
+    },
+  });
+  const vmState = mountOptionsComponent(component);
+
+  vmState.openGithubTarget();
+
+  assert.match(vmState.saveError, /repository/);
+  assert.deepEqual(opens, []);
+});
+
 test('Bookmarks view rejects adding the same normalized bookmark twice', () => {
   const component = loadVueComponent(componentPath, {
     '../utils/bookmarkStorage': {

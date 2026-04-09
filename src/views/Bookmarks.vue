@@ -101,6 +101,9 @@
             >
               {{ isSaving ? '保存中...' : '保存到 GitHub' }}
             </button>
+            <button class="secondary-button" type="button" @click="openGithubTarget">
+              快速打开 GitHub
+            </button>
             <button class="secondary-button" type="button" @click="clearStoredConfig">
               清除已保存配置
             </button>
@@ -195,6 +198,28 @@ export default {
   methods: {
     goToHome() {
       this.$router.push('/')
+    },
+    openGithubTarget() {
+      const repository = String(this.github.repository || '').trim()
+      const branch = String(this.github.branch || '').trim()
+
+      if (!repository) {
+        this.saveMessage = ''
+        this.saveError = 'repository 不能为空，无法跳转到 GitHub'
+        return
+      }
+
+      const encodedBranch = branch
+        .split('/')
+        .map((segment) => encodeURIComponent(segment))
+        .join('/')
+      const githubTarget = branch
+        ? `https://github.com/${repository}/blob/${encodedBranch}/src/data/bookmarks.json`
+        : `https://github.com/${repository}`
+
+      this.saveMessage = ''
+      this.saveError = ''
+      window.open(githubTarget, '_blank', 'noopener')
     },
     toggleTokenVisibility() {
       this.showToken = !this.showToken
