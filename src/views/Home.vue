@@ -34,6 +34,10 @@
         <h2>进制转换工具</h2>
         <p>十进制、二进制、十六进制互转，ASCII 与数字互转</p>
       </router-link>
+      <router-link to="/bookmarks" class="tool-card">
+        <h2>常用网址</h2>
+        <p>搜索、维护并同步个人常用网址列表</p>
+      </router-link>
       <!-- 可以继续添加更多工具卡片 -->
     </div>
   </div>
