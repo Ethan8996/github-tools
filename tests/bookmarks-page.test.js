@@ -76,6 +76,32 @@ function mountOptionsComponent(component, extraState = {}) {
   return state;
 }
 
+test('Bookmarks view defaults the GitHub save target to this repository and main branch', () => {
+  const component = loadVueComponent(componentPath, {
+    '../utils/bookmarkStorage': {
+      loadGithubConfig() {
+        return {
+          token: '',
+          repository: '',
+          branch: '',
+        };
+      },
+      saveGithubConfig() {},
+      clearGithubConfig() {},
+    },
+    '../utils/bookmarks': bookmarksUtils,
+    '../utils/githubContents': {
+      async fetchRepositoryFile() {},
+      async updateRepositoryFile() {},
+    },
+  });
+  const vmState = mountOptionsComponent(component);
+
+  assert.equal(vmState.github.repository, 'https://github.com/Ethan8996/github-tools');
+  assert.equal(vmState.github.branch, 'main');
+  assert.equal(vmState.rememberConfig, false);
+});
+
 test('Bookmarks view loads initial bookmarks, filters in real time, and tracks dirty adds/deletes', () => {
   const storageModule = {
     loadGithubConfig() {
@@ -229,6 +255,7 @@ test('Bookmarks view blocks GitHub quick jump when the repository is blank', () 
   });
   const vmState = mountOptionsComponent(component);
 
+  vmState.github.repository = '';
   vmState.openGithubTarget();
 
   assert.match(vmState.saveError, /repository/);
@@ -493,6 +520,50 @@ test('Bookmarks view validates GitHub config, allows blank branch, and clears st
   assert.equal(vmState.github.branch, '');
   assert.equal(vmState.github.token, '');
   assert.equal(vmState.rememberConfig, false);
+});
+
+test('Bookmarks view normalizes a full GitHub repository URL before saving', async () => {
+  const calls = [];
+  const component = loadVueComponent(componentPath, {
+    '../utils/bookmarks': bookmarksUtils,
+    '../utils/bookmarkStorage': {
+      loadGithubConfig() {
+        return {
+          token: '',
+          repository: '',
+          branch: '',
+        };
+      },
+      saveGithubConfig() {},
+      clearGithubConfig() {},
+    },
+    '../utils/githubContents': {
+      async fetchRepositoryFile(_fetchImpl, options) {
+        calls.push(['fetch', options]);
+        return { sha: 'sha-url-repo' };
+      },
+      async updateRepositoryFile(_fetchImpl, options) {
+        calls.push(['update', options]);
+        return { commitSha: 'commit-url-repo' };
+      },
+    },
+    fetch: async function fetchStub() {},
+  });
+  const vmState = mountOptionsComponent(component);
+
+  vmState.form.title = 'Example';
+  vmState.form.url = 'https://example.com';
+  vmState.addBookmark();
+  vmState.github.repository = ' https://github.com/Ethan8996/github-tools ';
+  vmState.github.token = ' ghp_token ';
+  vmState.github.branch = ' main ';
+
+  await vmState.saveToGithub();
+
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0][1].repository, 'Ethan8996/github-tools');
+  assert.equal(calls[1][1].repository, 'Ethan8996/github-tools');
+  assert.equal(calls[0][1].branch, 'main');
 });
 
 test('Bookmarks view forwards a blank branch string to GitHub helpers when the branch input is whitespace', async () => {

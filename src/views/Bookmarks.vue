@@ -150,20 +150,43 @@ import { filterBookmarks, normalizeBookmark, serializeBookmarks } from '../utils
 import { loadGithubConfig, saveGithubConfig, clearGithubConfig } from '../utils/bookmarkStorage'
 import { fetchRepositoryFile, updateRepositoryFile } from '../utils/githubContents'
 
+const DEFAULT_GITHUB_REPOSITORY = 'https://github.com/Ethan8996/github-tools'
+const DEFAULT_GITHUB_BRANCH = 'main'
+
+function normalizeGithubRepository(repository) {
+  const repositoryText = String(repository || '').trim()
+
+  if (!repositoryText) {
+    return ''
+  }
+
+  const githubUrlMatch = repositoryText.match(/^https?:\/\/github\.com\/([^/\s]+)\/([^/\s?#]+)(?:[/?#].*)?$/i)
+
+  if (githubUrlMatch) {
+    return `${githubUrlMatch[1]}/${githubUrlMatch[2].replace(/\.git$/, '')}`
+  }
+
+  return repositoryText.replace(/\.git$/, '')
+}
+
 function createGithubState() {
   const savedConfig = loadGithubConfig()
+  const hasSavedConfig = Boolean(savedConfig.repository || savedConfig.branch || savedConfig.token)
 
   return {
-    repository: savedConfig.repository || '',
-    branch: savedConfig.branch || '',
-    token: savedConfig.token || ''
+    github: {
+      repository: savedConfig.repository || DEFAULT_GITHUB_REPOSITORY,
+      branch: savedConfig.branch || DEFAULT_GITHUB_BRANCH,
+      token: savedConfig.token || ''
+    },
+    hasSavedConfig
   }
 }
 
 export default {
   name: 'Bookmarks',
   data() {
-    const github = createGithubState()
+    const { github, hasSavedConfig } = createGithubState()
 
     return {
       bookmarks: initialBookmarks.map((bookmark) => normalizeBookmark(bookmark)),
@@ -174,7 +197,7 @@ export default {
       },
       formError: '',
       github,
-      rememberConfig: Boolean(github.repository || github.branch || github.token),
+      rememberConfig: hasSavedConfig,
       showToken: false,
       hasLocalChanges: false,
       isSaving: false,
@@ -200,7 +223,7 @@ export default {
       this.$router.push('/')
     },
     openGithubTarget() {
-      const repository = String(this.github.repository || '').trim()
+      const repository = normalizeGithubRepository(this.github.repository)
       const branch = String(this.github.branch || '').trim()
 
       if (!repository) {
@@ -267,7 +290,7 @@ export default {
       this.saveError = ''
     },
     async saveToGithub() {
-      const repository = String(this.github.repository || '').trim()
+      const repository = normalizeGithubRepository(this.github.repository)
       const branch = String(this.github.branch || '').trim()
       const token = String(this.github.token || '').trim()
 
