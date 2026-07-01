@@ -617,6 +617,6 @@ test('router includes the bookmarks page and home view links to it', () => {
   assert.match(routerSource, /name:\s*'Bookmarks'/);
   assert.match(routerSource, /Bookmarks\.vue/);
 
-  assert.match(homeSource, /to="\/bookmarks"/);
+  assert.match(homeSource, /path:\s*'\/bookmarks'/);
   assert.match(homeSource, /常用网址/);
 });

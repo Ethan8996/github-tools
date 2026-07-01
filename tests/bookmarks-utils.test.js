@@ -136,7 +136,7 @@ test('serializeBookmarks returns pretty json with trailing newline', () => {
 });
 
 test('imported bookmarks data contains normalized devTool entries', () => {
-  assert.equal(importedBookmarks.length, 47);
+  assert.equal(importedBookmarks.length, 48);
 
   for (const bookmark of importedBookmarks) {
     assert.equal(typeof bookmark.id, 'string');
