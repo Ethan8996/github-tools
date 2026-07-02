@@ -140,7 +140,7 @@ export default {
 <style scoped>
 .home {
   min-height: 100vh;
-  padding: 32px;
+  padding: 18px 32px 32px;
   background:
     linear-gradient(180deg, #f7f8f5 0%, #eef1ea 100%);
   color: #17201a;
@@ -154,7 +154,7 @@ export default {
   gap: 28px;
   max-width: 1120px;
   margin: 0 auto;
-  padding: 34px 0 30px;
+  padding: 22px 0 22px;
   border-bottom: 1px solid rgba(23, 32, 26, 0.12);
 }
 
@@ -234,7 +234,7 @@ export default {
 .tools-section {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 30px 0 48px;
+  padding: 20px 0 48px;
 }
 
 .section-heading {
@@ -341,12 +341,12 @@ export default {
 
 @media (max-width: 720px) {
   .home {
-    padding: 20px;
+    padding: 14px 20px 20px;
   }
 
   .hero {
     display: block;
-    padding: 20px 0 24px;
+    padding: 14px 0 18px;
   }
 
   .hero h1 {

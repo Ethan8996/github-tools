@@ -1,6 +1,9 @@
 <template>
   <div class="tool">
-    <h1>进制转换工具</h1>
+    <div class="page-header">
+      <button class="home-btn" type="button" @click="goToHome">← 返回首页</button>
+      <h1>进制转换工具</h1>
+    </div>
     
     <div class="converter-container">
       <!-- 十进制 ↔ 二进制 -->
@@ -285,6 +288,9 @@ export default {
     }
   },
   methods: {
+    goToHome() {
+      this.$router.push('/')
+    },
     // 十进制转二进制
     convertDecimalToBinary() {
       const num = parseInt(this.decimalToBinaryInput, 10)
@@ -626,7 +632,23 @@ export default {
 
 h1 {
   color: #333;
+  margin: 0;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-bottom: 20px;
+}
+
+.home-btn {
+  background: #666;
+  flex-shrink: 0;
+}
+
+.home-btn:hover {
+  background: #555;
 }
 
 .converter-container {
@@ -788,6 +810,11 @@ button:active {
 }
 
 @media (max-width: 768px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .converter-container {
     grid-template-columns: 1fr;
   }
