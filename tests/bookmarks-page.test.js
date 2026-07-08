@@ -620,3 +620,15 @@ test('router includes the bookmarks page and home view links to it', () => {
   assert.match(homeSource, /path:\s*'\/bookmarks'/);
   assert.match(homeSource, /常用网址/);
 });
+
+test('router includes the Chinese converter page and home view links to it', () => {
+  const routerSource = fs.readFileSync(routerPath, 'utf8');
+  const homeSource = fs.readFileSync(homePath, 'utf8');
+
+  assert.match(routerSource, /path:\s*'\/chinese-converter'/);
+  assert.match(routerSource, /name:\s*'ChineseConverter'/);
+  assert.match(routerSource, /ChineseConverter\.vue/);
+
+  assert.match(homeSource, /path:\s*'\/chinese-converter'/);
+  assert.match(homeSource, /简繁转换/);
+});

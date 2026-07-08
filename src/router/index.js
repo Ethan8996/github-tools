@@ -51,6 +51,11 @@ const routes = [
     path: '/bookmarks',
     name: 'Bookmarks',
     component: () => import('../views/Bookmarks.vue')
+  },
+  {
+    path: '/chinese-converter',
+    name: 'ChineseConverter',
+    component: () => import('../views/ChineseConverter.vue')
   }
 ]
 

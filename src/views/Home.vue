@@ -124,6 +124,12 @@ const tools = [
     path: '/bookmarks',
     title: '常用网址',
     description: '搜索、维护并同步个人常用网址列表'
+  },
+  {
+    index: '10',
+    path: '/chinese-converter',
+    title: '简繁转换',
+    description: '简体中文与繁体中文互转，默认输出台湾繁体'
   }
 ]
 
