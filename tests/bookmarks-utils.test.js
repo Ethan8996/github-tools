@@ -13,16 +13,21 @@ const {
 const importedBookmarks = require('../src/data/bookmarks.json');
 const {
   STORAGE_KEY,
+  LEGACY_STORAGE_KEY,
   loadGithubConfig,
   saveGithubConfig,
   clearGithubConfig,
-} = require('../src/utils/bookmarkStorage');
+} = require('../src/utils/githubConfigStorage');
 
 function createMemoryStorage(initialValue) {
   const store = new Map();
 
   if (typeof initialValue === 'string') {
     store.set(STORAGE_KEY, initialValue);
+  } else if (initialValue && typeof initialValue === 'object') {
+    for (const [key, value] of Object.entries(initialValue)) {
+      store.set(key, String(value));
+    }
   }
 
   return {
@@ -175,8 +180,51 @@ test('loadGithubConfig returns defaults when stored json is invalid', () => {
   });
 });
 
-test('saveGithubConfig persists token repository and branch under one storage key', () => {
-  const storage = createMemoryStorage();
+test('loadGithubConfig reads the legacy bookmarks key when the shared key is absent', () => {
+  const storage = createMemoryStorage({
+    [LEGACY_STORAGE_KEY]: JSON.stringify({
+      token: 'ghp_legacy',
+      repository: 'legacy/repo',
+      branch: 'legacy-branch',
+    }),
+  });
+
+  assert.deepEqual(loadGithubConfig(storage), {
+    token: 'ghp_legacy',
+    repository: 'legacy/repo',
+    branch: 'legacy-branch',
+  });
+});
+
+test('loadGithubConfig prefers the shared key over the legacy key', () => {
+  const storage = createMemoryStorage({
+    [STORAGE_KEY]: JSON.stringify({
+      token: 'ghp_current',
+      repository: 'current/repo',
+      branch: 'main',
+    }),
+    [LEGACY_STORAGE_KEY]: JSON.stringify({
+      token: 'ghp_legacy',
+      repository: 'legacy/repo',
+      branch: 'legacy-branch',
+    }),
+  });
+
+  assert.deepEqual(loadGithubConfig(storage), {
+    token: 'ghp_current',
+    repository: 'current/repo',
+    branch: 'main',
+  });
+});
+
+test('saveGithubConfig persists the shared config and removes the legacy key', () => {
+  const storage = createMemoryStorage({
+    [LEGACY_STORAGE_KEY]: JSON.stringify({
+      token: 'ghp_legacy',
+      repository: 'legacy/repo',
+      branch: 'legacy-branch',
+    }),
+  });
 
   saveGithubConfig(storage, {
     token: 'ghp_test',
@@ -194,14 +242,19 @@ test('saveGithubConfig persists token repository and branch under one storage ke
   });
 });
 
-test('clearGithubConfig removes persisted config', () => {
-  const storage = createMemoryStorage(
-    JSON.stringify({
+test('clearGithubConfig removes the shared and legacy config keys', () => {
+  const storage = createMemoryStorage({
+    [STORAGE_KEY]: JSON.stringify({
       token: 'ghp_test',
       repository: 'owner/repo',
       branch: 'main',
-    })
-  );
+    }),
+    [LEGACY_STORAGE_KEY]: JSON.stringify({
+      token: 'ghp_legacy',
+      repository: 'legacy/repo',
+      branch: 'legacy-branch',
+    }),
+  });
 
   clearGithubConfig(storage);
 

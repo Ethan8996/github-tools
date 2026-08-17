@@ -56,6 +56,11 @@ const routes = [
     path: '/chinese-converter',
     name: 'ChineseConverter',
     component: () => import('../views/ChineseConverter.vue')
+  },
+  {
+    path: '/commands',
+    name: 'ToolCommands',
+    component: () => import('../views/ToolCommands.vue')
   }
 ]
 

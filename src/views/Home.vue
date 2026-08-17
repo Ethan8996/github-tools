@@ -130,6 +130,12 @@ const tools = [
     path: '/chinese-converter',
     title: '简繁转换',
     description: '简体中文与繁体中文互转，默认输出台湾繁体'
+  },
+  {
+    index: '11',
+    path: '/commands',
+    title: '常用命令',
+    description: '查阅并维护开发环境、数据库和本地代理命令'
   }
 ]
 

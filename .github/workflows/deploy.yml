@@ -10,18 +10,18 @@ jobs:
       contents: write  # 这一行很重要，添加写权限
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '14'
+          node-version: '22.23.2'
           
       - name: Install and Build 🔧
         run: |
-          npm install
+          npm ci
           npm run build
           
       - name: Deploy to GitHub Pages

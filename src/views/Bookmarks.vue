@@ -149,25 +149,10 @@ import initialBookmarks from '../data/bookmarks.json'
 import { filterBookmarks, normalizeBookmark, serializeBookmarks } from '../utils/bookmarks'
 import { loadGithubConfig, saveGithubConfig, clearGithubConfig } from '../utils/bookmarkStorage'
 import { fetchRepositoryFile, updateRepositoryFile } from '../utils/githubContents'
+import { normalizeGithubRepository, buildGithubFileUrl } from '../utils/githubRepository'
 
 const DEFAULT_GITHUB_REPOSITORY = 'https://github.com/Ethan8996/github-tools'
 const DEFAULT_GITHUB_BRANCH = 'main'
-
-function normalizeGithubRepository(repository) {
-  const repositoryText = String(repository || '').trim()
-
-  if (!repositoryText) {
-    return ''
-  }
-
-  const githubUrlMatch = repositoryText.match(/^https?:\/\/github\.com\/([^/\s]+)\/([^/\s?#]+)(?:[/?#].*)?$/i)
-
-  if (githubUrlMatch) {
-    return `${githubUrlMatch[1]}/${githubUrlMatch[2].replace(/\.git$/, '')}`
-  }
-
-  return repositoryText.replace(/\.git$/, '')
-}
 
 function createGithubState() {
   const savedConfig = loadGithubConfig()
@@ -232,13 +217,11 @@ export default {
         return
       }
 
-      const encodedBranch = branch
-        .split('/')
-        .map((segment) => encodeURIComponent(segment))
-        .join('/')
-      const githubTarget = branch
-        ? `https://github.com/${repository}/blob/${encodedBranch}/src/data/bookmarks.json`
-        : `https://github.com/${repository}`
+      const githubTarget = buildGithubFileUrl({
+        repository,
+        branch,
+        path: 'src/data/bookmarks.json'
+      })
 
       this.saveMessage = ''
       this.saveError = ''
