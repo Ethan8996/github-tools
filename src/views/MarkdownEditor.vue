@@ -32,7 +32,9 @@
 <script>
 import Vditor from 'vditor';
 import 'vditor/dist/index.css';
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { exportMarkdownPdf } from '../utils/markdownPdfExport';
 
 export default {
   name: 'MarkdownEditor',
@@ -85,10 +87,34 @@ export default {
           orphans: 3;
           widows: 3;
         }
+
+        .language-mermaid {
+          display: block;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          padding: 0;
+          background: transparent;
+          white-space: normal;
+          text-align: center;
+        }
+
+        pre:has(> .language-mermaid) {
+          padding: 0;
+          overflow: visible;
+          background: transparent;
+        }
+
+        .language-mermaid svg {
+          display: block;
+          width: 100%;
+          max-width: 100%;
+          height: auto;
+          margin: 0 auto;
+        }
       `;
 
       const githubTheme = `
-        body { 
+        .markdown-pdf-export {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
           font-size: 16px;
           line-height: 1.6;
@@ -225,7 +251,7 @@ export default {
       `;
 
       const minimalTheme = `
-        body { 
+        .markdown-pdf-export {
           font-family: Georgia, 'Times New Roman', serif;
           font-size: 14px;
           line-height: 1.8;
@@ -419,42 +445,15 @@ export default {
           return;
         }
 
-        const renderedHtml = this.vditor.getHTML();
-        
-        const containerDiv = document.createElement('div');
-        containerDiv.style.padding = '30px';
-        containerDiv.style.backgroundColor = '#ffffff';
-        containerDiv.innerHTML = `<style>${this.getPdfStyleSheet()}</style>${renderedHtml}`;
-
-        const pdfOptions = {
-          margin: 15,
+        await exportMarkdownPdf({
+          renderedHtml: this.vditor.getHTML(),
+          styleSheet: this.getPdfStyleSheet(),
           filename: `markdown-${this.generateTimestamp()}.pdf`,
-          image: { type: 'jpeg', quality: 0.95 },
-          html2canvas: { 
-            scale: 2,
-            useCORS: true,
-            letterRendering: true,
-            logging: false
-          },
-          jsPDF: { 
-            unit: 'mm', 
-            format: 'a4', 
-            orientation: 'portrait',
-            compress: true
-          },
-          pagebreak: { 
-            // Multiple modes for maximum compatibility:
-            // - 'avoid-all': tries to avoid all breaks
-            // - 'css': respects CSS page-break rules  
-            // - 'legacy': fallback for older browsers
-            mode: ['avoid-all', 'css', 'legacy'],
-            before: '.page-break-before',
-            after: '.page-break-after',
-            avoid: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'table', 'pre', 'blockquote']
-          }
-        };
-
-        await html2pdf().set(pdfOptions).from(containerDiv).save();
+          VditorApi: Vditor,
+          Html2Canvas: html2canvas,
+          sourceRoot: document.getElementById('vditor'),
+          JsPdf: jsPDF
+        });
 
         this.successMessage = 'PDF 文件下载成功！';
         setTimeout(() => {

@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "core-js": "^3.31.0",
-    "html2pdf.js": "^0.14.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
     "mammoth": "^1.11.0",
     "opencc-js": "^1.4.0",
     "turndown": "^7.2.2",
