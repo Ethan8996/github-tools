@@ -9,10 +9,12 @@
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
+    "@mermaid-js/layout-elk": "^0.2.3",
     "core-js": "^3.31.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "mammoth": "^1.11.0",
+    "mermaid": "^11.17.2",
     "opencc-js": "^1.4.0",
     "turndown": "^7.2.2",
     "vditor": "^3.11.2",
@@ -20,6 +22,7 @@
     "vue-router": "^4.0.12"
   },
   "devDependencies": {
+    "@babel/plugin-transform-class-static-block": "^7.29.7",
     "@vue/cli-plugin-babel": "~5.0.8",
     "@vue/cli-plugin-eslint": "~5.0.8",
     "@vue/cli-service": "~5.0.8",

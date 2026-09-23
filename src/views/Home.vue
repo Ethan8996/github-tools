@@ -136,6 +136,12 @@ const tools = [
     path: '/commands',
     title: '常用命令',
     description: '查阅并维护开发环境、数据库和本地代理命令'
+  },
+  {
+    index: '12',
+    path: '/mermaid-canvas',
+    title: 'Mermaid 画布',
+    description: '编辑流程图，切换主题并导出 SVG 或 PNG'
   }
 ]
 

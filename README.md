@@ -1,5 +1,11 @@
 # github-tools
 
+## Mermaid 画布
+
+首页的「Mermaid 画布」入口打开 `#/mermaid-canvas`。可以编辑 Mermaid 源码、切换六种主题、缩放预览并导出 SVG 或 PNG；源码和主题保存在当前浏览器中。流程图节点可加 `:::decision` 显示虚线判断框。
+
+本地运行 `npm install && npm run serve`，再打开终端显示的地址。现有 GitHub Pages 构建使用 `/github-tools/` 作为资源根路径和 hash 路由，部署后入口为 `https://ethan8996.github.io/github-tools/#/mermaid-canvas`。部署流程沿用 `.github/workflows/deploy.yml`，推送到 `main` 后由工作流构建发布。
+
 ## Project setup
 ```
 npm install

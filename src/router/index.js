@@ -43,6 +43,11 @@ const routes = [
     component: () => import('../views/MarkdownEditor.vue')
   },
   {
+    path: '/mermaid-canvas',
+    name: 'MermaidCanvas',
+    component: () => import('../views/MermaidCanvas.vue')
+  },
+  {
     path: '/base-converter',
     name: 'BaseConverter',
     component: () => import('../views/BaseConverter.vue')

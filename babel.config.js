@@ -4,5 +4,6 @@ module.exports = {
       useBuiltIns: 'entry',
       corejs: 3
     }]
-  ]
+  ],
+  plugins: ['@babel/plugin-transform-class-static-block']
 }
