@@ -1,0 +1,1 @@
+"use strict";(self["webpackChunkgithub_tools"]=self["webpackChunkgithub_tools"]||[]).push([[30],{30:function(e,t,u){u.d(t,{createArchitectureServices:function(){return c.S}});var c=u(2537);u(1395)}}]);
