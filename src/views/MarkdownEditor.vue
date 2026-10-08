@@ -709,8 +709,9 @@ h1 {
 }
 
 /* App.vue 全局 #app { text-align: center } 会继承进 Vditor 编辑区，
-   导致 IR 模式下列表编号与文本间距异常、段落居中，这里重置回左对齐 */
-.vditor-container :deep(.vditor) {
+   导致 IR 模式下列表编号与文本间距异常、段落居中，这里重置回左对齐。
+   注意 Vditor 会把 vditor 类加在容器自身上，因此必须写在容器自身而非后代选择器 */
+.vditor-container {
   text-align: left;
 }
 
