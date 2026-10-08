@@ -6,6 +6,7 @@
     </div>
 
     <div class="toolbar-actions">
+      <button @click="triggerFileSelect" class="action-btn">📂 打开本地 MD</button>
       <button @click="downloadMarkdown" class="action-btn">📥 下载 MD</button>
       <div class="pdf-export-group">
         <button @click="downloadPDF" class="action-btn">📄 下载 PDF</button>
@@ -17,7 +18,25 @@
       <button @click="clearContent" class="clear-btn">🗑️ 清空</button>
     </div>
 
-    <div id="vditor" class="vditor-container"></div>
+    <input
+      ref="fileInput"
+      type="file"
+      accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain"
+      style="display: none"
+      @change="handleFileSelect"
+    />
+
+    <div
+      class="editor-drop-zone"
+      :class="{ 'drag-over': dragOver }"
+      @dragenter.capture="onDragEnter"
+      @dragover.capture="onDragOver"
+      @dragleave.capture="onDragLeave"
+      @drop.capture="onDrop"
+    >
+      <div id="vditor" class="vditor-container"></div>
+      <div v-if="dragOver" class="drop-hint">松开以打开 Markdown 文件</div>
+    </div>
 
     <div v-if="successMessage" class="success-message">
       {{ successMessage }}
@@ -43,7 +62,9 @@ export default {
       vditor: null,
       successMessage: '',
       error: '',
-      pdfStyleTheme: 'github'
+      pdfStyleTheme: 'github',
+      dragOver: false,
+      dragDepth: 0
     };
   },
   mounted() {
@@ -389,6 +410,107 @@ export default {
       this.$router.push('/');
     },
 
+    triggerFileSelect() {
+      this.$refs.fileInput.click();
+    },
+
+    handleFileSelect(event) {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (file) {
+        this.loadMarkdownFile(file);
+      }
+    },
+
+    isMarkdownFile(file) {
+      if (/\.(md|markdown|mdown|mkd|txt)$/i.test(file.name)) {
+        return true;
+      }
+      return ['text/markdown', 'text/plain'].includes(file.type);
+    },
+
+    loadMarkdownFile(file) {
+      if (!this.vditor) {
+        this.error = '编辑器未初始化';
+        return;
+      }
+      if (!this.isMarkdownFile(file)) {
+        this.error = `不支持的文件类型: ${file.name}，请选择 Markdown 文件`;
+        setTimeout(() => {
+          this.error = '';
+        }, 3000);
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        this.error = '文件过大，请选择 5MB 以内的 Markdown 文件';
+        setTimeout(() => {
+          this.error = '';
+        }, 3000);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.vditor.setValue(reader.result || '');
+        this.successMessage = `已打开文件: ${file.name}`;
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 2000);
+      };
+      reader.onerror = () => {
+        this.error = `文件读取失败: ${file.name}`;
+        setTimeout(() => {
+          this.error = '';
+        }, 3000);
+      };
+      reader.readAsText(file, 'utf-8');
+    },
+
+    hasMarkdownFiles(event) {
+      const items = event.dataTransfer && event.dataTransfer.items;
+      if (!items) {
+        return false;
+      }
+      return Array.from(items).some((item) => item.kind === 'file');
+    },
+
+    onDragEnter(event) {
+      if (!this.hasMarkdownFiles(event)) {
+        return;
+      }
+      event.preventDefault();
+      this.dragDepth += 1;
+      this.dragOver = true;
+    },
+
+    onDragOver(event) {
+      if (this.hasMarkdownFiles(event)) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+      }
+    },
+
+    onDragLeave(event) {
+      event.preventDefault();
+      this.dragDepth = Math.max(0, this.dragDepth - 1);
+      if (this.dragDepth === 0) {
+        this.dragOver = false;
+      }
+    },
+
+    onDrop(event) {
+      this.dragDepth = 0;
+      this.dragOver = false;
+      const files = event.dataTransfer && event.dataTransfer.files;
+      const file = files && Array.from(files).find((f) => this.isMarkdownFile(f));
+      if (!file) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      this.loadMarkdownFile(file);
+    },
+
     downloadMarkdown() {
       try {
         if (!this.vditor) {
@@ -584,6 +706,30 @@ h1 {
   border: 1px solid #ddd;
   border-radius: 4px;
   overflow: hidden;
+}
+
+.editor-drop-zone {
+  position: relative;
+}
+
+.editor-drop-zone.drag-over .vditor-container {
+  outline: 2px dashed #3498db;
+  outline-offset: -2px;
+}
+
+.drop-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(52, 152, 219, 0.12);
+  color: #2980b9;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .success-message {
