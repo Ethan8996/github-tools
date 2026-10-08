@@ -708,6 +708,12 @@ h1 {
   overflow: hidden;
 }
 
+/* App.vue 全局 #app { text-align: center } 会继承进 Vditor 编辑区，
+   导致 IR 模式下列表编号与文本间距异常、段落居中，这里重置回左对齐 */
+.vditor-container :deep(.vditor) {
+  text-align: left;
+}
+
 .editor-drop-zone {
   position: relative;
 }
